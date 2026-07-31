@@ -1,17 +1,15 @@
-Gatling plugin for Gradle - Java demo project
-=============================================
+Gatling multi-project demo
+==========================
 
-A simple showcase of a Gradle project using the Gatling plugin for Gradle. Refer to the plugin documentation
-[on the Gatling website](https://docs.gatling.io/reference/integrations/build-tools/gradle-plugin/) for usage.
+This repository is organized as a Gradle multi-project build:
 
-This project is written in Java, others are available for [Kotlin](https://github.com/gatling/gatling-gradle-plugin-demo-kotlin)
-and [Scala](https://github.com/gatling/gatling-gradle-plugin-demo-scala).
+* `gatling-app`: the Gatling test application and simulations
+* `realword-openapi`: placeholder module for the RealWorld OpenAPI contract/client code
+* `gatling-core`: shared Gatling support code
 
-It includes:
+The existing Gatling simulation and resources now live under `gatling-app/src/gatling`.
 
-* Gradle Wrapper, so you don't need to install Gradle (a JDK must be installed and $JAVA_HOME configured)
-* minimal `build.gradle` leveraging Gradle wrapper
-* latest version of `io.gatling.gradle` plugin applied
-* sample [Simulation](https://docs.gatling.io/reference/glossary/#simulation) class,
-demonstrating sufficient Gatling functionality
-* proper source file layout
+Common commands:
+
+* `./gradlew build`
+* `./gradlew :gatling-app:gatlingRun`

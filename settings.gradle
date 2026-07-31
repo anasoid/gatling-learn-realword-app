@@ -1,0 +1,5 @@
+rootProject.name = 'gatling-learn-realword-app'
+
+include 'gatling-app'
+include 'realword-openapi'
+include 'gatling-core'
