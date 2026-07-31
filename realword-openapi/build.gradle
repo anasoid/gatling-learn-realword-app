@@ -1,3 +1,53 @@
 plugins {
   id 'java-library'
+  id 'org.openapi.generator'
+}
+
+def realworldOpenApiSpec = layout.projectDirectory.file('src/main/resources/openapi/realworld-openapi.yml')
+def generatedGatlingDir = layout.buildDirectory.dir('generated/scala-gatling')
+
+tasks.register('validateRealworldOpenApi', org.openapitools.generator.gradle.plugin.tasks.ValidateTask) {
+  group = 'openapi'
+  description = 'Validate the RealWorld OpenAPI contract.'
+  inputSpec.set(realworldOpenApiSpec.asFile.absolutePath)
+}
+
+tasks.register('generateRealworldGatling', org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+  group = 'openapi'
+  description = 'Generate Gatling Scala simulations from the RealWorld OpenAPI contract.'
+
+  dependsOn tasks.named('validateRealworldOpenApi')
+
+  generatorName.set('scala-gatling')
+  inputSpec.set(realworldOpenApiSpec.asFile.absolutePath)
+  outputDir.set(generatedGatlingDir.get().asFile.absolutePath)
+  apiPackage.set('com.realworld.gatling.api')
+  modelPackage.set('com.realworld.gatling.model')
+  invokerPackage.set('com.realworld.gatling.core')
+  configOptions.set([
+    dateLibrary: 'java8'
+  ])
+
+  doLast {
+    def generatedScalaDir = generatedGatlingDir.get().dir('src/gatling/scala').asFile.toPath()
+
+    java.nio.file.Files.walk(generatedScalaDir)
+      .filter { path -> path.fileName.toString().endsWith('Simulation.scala') }
+      .forEach { path ->
+        def generatedSimulation = path.toFile()
+        def source = generatedSimulation.getText('UTF-8')
+          .replace('.baseURL(', '.baseUrl(')
+          .replace('mutable.MutableList', 'mutable.ArrayBuffer')
+
+        generatedSimulation.write(source, 'UTF-8')
+      }
+  }
+}
+
+tasks.named('check').configure {
+  dependsOn tasks.named('validateRealworldOpenApi')
+}
+
+tasks.named('assemble').configure {
+  dependsOn tasks.named('generateRealworldGatling')
 }

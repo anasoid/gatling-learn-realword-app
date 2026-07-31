@@ -1,11 +1,29 @@
 plugins {
   id 'java'
+  id 'scala'
   id 'io.gatling.gradle'
 }
+
+def generatedGatlingDir = project(':realword-openapi').layout.buildDirectory.dir('generated/scala-gatling')
 
 dependencies {
   implementation project(':gatling-core')
   implementation project(':realword-openapi')
+}
+
+sourceSets {
+  gatling {
+    scala.srcDir(generatedGatlingDir.map { it.dir('src/gatling/scala') })
+    resources.srcDir(generatedGatlingDir.map { it.dir('src/gatling/resources') })
+  }
+}
+
+tasks.named('compileGatlingScala').configure {
+  dependsOn ':realword-openapi:generateRealworldGatling'
+}
+
+tasks.named('processGatlingResources').configure {
+  dependsOn ':realword-openapi:generateRealworldGatling'
 }
 
 gatling {
