@@ -1,0 +1,11 @@
+# Configuration locale d'IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Exclure aussi les dossiers de compilation si vous utilisez Java/Maven/Gradle
+out/
+target/
+.gradle/
+build/
