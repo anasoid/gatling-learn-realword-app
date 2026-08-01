@@ -1,0 +1,11 @@
+plugins {
+  id 'java'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  implementation 'org.openapitools:openapi-generator:7.24.0'
+}

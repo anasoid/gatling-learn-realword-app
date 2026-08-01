@@ -4,11 +4,12 @@ Gatling multi-project demo
 This repository is organized as a Gradle multi-project build:
 
 * `gatling-app`: the Gatling test application and simulations
-* `realword-openapi`: the RealWorld OpenAPI contract and Gatling code generation
+* `realword-openapi`: the RealWorld OpenAPI contract and custom Gatling Java code generation
 * `gatling-core`: shared Gatling support code
 
 The existing Gatling simulation and resources now live under `gatling-app/src/gatling`.
-Generated Gatling Scala simulations and resources are written to `realword-openapi/build/generated/scala-gatling`.
+Generated Gatling Java simulations and resources are written to `realword-openapi/build/generated/java-gatling`.
+The custom OpenAPI Generator templates live under `realword-openapi/src/main/openapi-generator/java-gatling`.
 
 Common commands:
 

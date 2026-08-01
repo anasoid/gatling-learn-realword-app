@@ -1,0 +1,24 @@
+package {{package}};
+
+{{#models}}
+{{#model}}
+public final class {{classname}} {
+    private {{classname}}() {
+    }
+
+    public static String toStringBody({{#vars}}Object var_{{name}}{{^-last}}, {{/-last}}{{/vars}}) {
+{{#hasVars}}
+        StringBuilder body = new StringBuilder("{\n");
+    {{#vars}}
+        body.append("\"{{{name}}}\":").append(var_{{name}}){{^-last}}.append(","){{/-last}};
+    {{/vars}}
+        body.append("\n}");
+        return body.toString();
+{{/hasVars}}
+{{^hasVars}}
+        return "{}";
+{{/hasVars}}
+    }
+}
+{{/model}}
+{{/models}}
