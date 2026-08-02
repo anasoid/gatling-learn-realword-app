@@ -45,10 +45,46 @@ public class {{classname}} {
     public static String toStringBody({{#vars}}Object var_{{name}}{{^-last}}, {{/-last}}{{/vars}}) {
         StringBuilder body = new StringBuilder("{\n");
 {{#vars}}
-        body.append("\"{{name}}\":").append(var_{{name}}){{^-last}}.append(","){{/-last}};
+        body.append("\"{{name}}\":").append(toJsonValue(var_{{name}})){{^-last}}.append(","){{/-last}};
 {{/vars}}
         body.append("\n}");
         return body.toString();
+    }
+
+    private static String toJsonValue(Object value) {
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof Number || value instanceof Boolean) {
+            return String.valueOf(value);
+        }
+        if (value instanceof Character) {
+            return "\"" + escapeJson(String.valueOf(value)) + "\"";
+        }
+        if (value instanceof String) {
+            return "\"" + escapeJson((String) value) + "\"";
+        }
+        try {
+            java.lang.reflect.Method toStringBodyMethod = value.getClass().getMethod("toStringBody");
+            if (toStringBodyMethod.getParameterCount() == 0 && toStringBodyMethod.getReturnType() == String.class) {
+                Object nested = toStringBodyMethod.invoke(value);
+                if (nested != null) {
+                    return nested.toString();
+                }
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // fall through and stringify as text
+        }
+        return "\"" + escapeJson(String.valueOf(value)) + "\"";
+    }
+
+    private static String escapeJson(String value) {
+        return value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
     }
 {{/hasVars}}
 {{^hasVars}}

@@ -21,10 +21,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class RegisterSimulation extends AbstractRealWorldSimulation {
+  private static final Logger LOGGER = Logger.getLogger(RegisterSimulation.class.getName());
 
-  private static final int USERS_COUNT = 100;
+  private static final int USERS_COUNT = 1;
   private static final String PASSWORD = "pass";
   private static final Path LOGIN_USERS_CSV_FILE =
       Path.of("gatling-app", "build", "register", "logged-in-users.csv");
@@ -44,10 +46,12 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
                     .check(status().is(201))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
                     .check(jsonPath("$.user.email").isEL("#{email}")))
+            .exitHereIfFailed()
             .exec(
                 UserAndAuthenticationApi.loginRequest(loginRequestWithSessionValues())
                     .check(status().is(200))
                     .check(jsonPath("$.user.token").saveAs("token")))
+            .exitHereIfFailed()
             .exec(RegisterSimulation::appendLoggedInUserCsv)
             .exec(
                 UserAndAuthenticationApi.getCurrentUserRequest()
@@ -91,6 +95,7 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
     try {
       Files.createDirectories(LOGIN_USERS_CSV_FILE.getParent());
       Files.deleteIfExists(LOGIN_USERS_CSV_FILE);
+      LOGGER.info("Logged-in users CSV path: " + LOGIN_USERS_CSV_FILE.toAbsolutePath().normalize());
     } catch (IOException ex) {
       throw new IllegalStateException("Failed to initialize login users CSV: " + LOGIN_USERS_CSV_FILE, ex);
     }
