@@ -1,24 +1,67 @@
 package {{package}};
 
+import java.util.List;
+import java.util.Map;
+import java.time.OffsetDateTime;
 {{#models}}
 {{#model}}
-public final class {{classname}} {
-    private {{classname}}() {
+{{#imports}}{{#import}}import {{import}};
+{{/import}}{{/imports}}
+public class {{classname}} {
+
+{{#vars}}
+    private {{{dataType}}} {{name}};
+{{/vars}}
+
+    public {{classname}}() {}
+
+{{#hasVars}}
+    public {{classname}}({{#vars}}{{{dataType}}} {{name}}{{^-last}}, {{/-last}}{{/vars}}) {
+{{#vars}}
+        this.{{name}} = {{name}};
+{{/vars}}
     }
 
+{{#vars}}
+    public {{{dataType}}} {{getter}}() {
+        return {{name}};
+    }
+
+    public {{classname}} {{setter}}({{{dataType}}} {{name}}) {
+        this.{{name}} = {{name}};
+        return this;
+    }
+
+{{/vars}}
+    /** Build a JSON body string from current field values. */
+    public String toStringBody() {
+        return toStringBody({{#vars}}{{name}}{{^-last}}, {{/-last}}{{/vars}});
+    }
+
+    /**
+     * Build a JSON body string from the given values.
+     * Accepts Gatling EL expressions (e.g. {@code "#{email}"}) for feeder-driven scenarios.
+     */
     public static String toStringBody({{#vars}}Object var_{{name}}{{^-last}}, {{/-last}}{{/vars}}) {
-{{#hasVars}}
         StringBuilder body = new StringBuilder("{\n");
-    {{#vars}}
-        body.append("\"{{{name}}}\":").append(var_{{name}}){{^-last}}.append(","){{/-last}};
-    {{/vars}}
+{{#vars}}
+        body.append("\"{{name}}\":").append(var_{{name}}){{^-last}}.append(","){{/-last}};
+{{/vars}}
         body.append("\n}");
         return body.toString();
+    }
 {{/hasVars}}
 {{^hasVars}}
+    /** Returns an empty JSON object body. */
+    public String toStringBody() {
         return "{}";
-{{/hasVars}}
     }
+
+    /** Returns an empty JSON object body. */
+    public static String toStringBody() {
+        return "{}";
+    }
+{{/hasVars}}
 }
 {{/model}}
 {{/models}}

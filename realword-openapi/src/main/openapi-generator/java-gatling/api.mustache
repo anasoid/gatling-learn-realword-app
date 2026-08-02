@@ -1,125 +1,55 @@
 package {{package}};
 
 import {{modelPackage}}.*;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import io.gatling.javaapi.core.PopulationBuilder;
-import io.gatling.javaapi.core.ScenarioBuilder;
-import io.gatling.javaapi.core.Simulation;
-import io.gatling.javaapi.http.HttpProtocolBuilder;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import io.gatling.javaapi.core.ChainBuilder;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
-import static io.gatling.javaapi.http.HttpDsl.http;
+import static io.gatling.javaapi.http.HttpDsl.*;
 
-public class {{classname}}Simulation extends Simulation {
-
-    public {{classname}}Simulation() {
-        String userDataDirectory = new File("").getAbsolutePath() + "/src/gatling/resources/data";
-
-        Config config = ConfigFactory.load(System.getProperty("testConfig", "baseline"))
-            .withFallback(ConfigFactory.load("default"));
-        int durationSeconds = config.getInt("performance.durationSeconds");
-        int rampUpSeconds = config.getInt("performance.rampUpSeconds");
-        int rampDownSeconds = config.getInt("performance.rampDownSeconds");
-        String authentication = config.getString("performance.authorizationHeader");
-        String acceptHeader = config.getString("performance.acceptType");
-        String contentTypeHeader = config.getString("performance.contentType");
-        double rateMultiplier = config.getDouble("performance.rateMultiplier");
-        double instanceMultiplier = config.getDouble("performance.instanceMultiplier");
-
-        int globalResponseTimeMinLTE = config.getInt("performance.global.assertions.responseTime.min.lte");
-        int globalResponseTimeMinGTE = config.getInt("performance.global.assertions.responseTime.min.gte");
-        int globalResponseTimeMaxLTE = config.getInt("performance.global.assertions.responseTime.max.lte");
-        int globalResponseTimeMaxGTE = config.getInt("performance.global.assertions.responseTime.max.gte");
-        int globalResponseTimeMeanLTE = config.getInt("performance.global.assertions.responseTime.mean.lte");
-        int globalResponseTimeMeanGTE = config.getInt("performance.global.assertions.responseTime.mean.gte");
-        double globalResponseTimeFailedRequestsPercentLTE = config.getDouble("performance.global.assertions.failedRequests.percent.lte");
-        double globalResponseTimeFailedRequestsPercentGTE = config.getDouble("performance.global.assertions.failedRequests.percent.gte");
-        double globalResponseTimeSuccessfulRequestsPercentLTE = config.getDouble("performance.global.assertions.successfulRequests.percent.lte");
-        double globalResponseTimeSuccessfulRequestsPercentGTE = config.getDouble("performance.global.assertions.successfulRequests.percent.gte");
-
-        HttpProtocolBuilder httpProtocol = http.baseUrl("{{basePath}}")
-            .doNotTrackHeader("1")
-            .acceptLanguageHeader("en-US,en;q=0.5")
-            .acceptEncodingHeader("gzip, deflate")
-            .userAgentHeader("Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0")
-            .acceptHeader(acceptHeader)
-            .contentTypeHeader(contentTypeHeader);
-
-        if (!authentication.equals("~MANUAL_ENTRY~")) {
-            httpProtocol = httpProtocol.authorizationHeader(authentication);
-        }
+/**
+ * Reusable Gatling API actions for {{classname}} operations.
+ *
+ * <p>Each method returns a {@link ChainBuilder} that can be composed directly into scenarios.
+ * Path parameters are resolved via Gatling EL session variables (e.g. {@code #{username}}).
+ *
+ * <p>Example usage:
+ * <pre>{@code
+ * ScenarioBuilder scn = scenario("Login flow")
+ *     .exec({{classname}}.login(new LoginRequest().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"))));
+ * }</pre>
+ */
+public class {{classname}} {
 
 {{#operations}}
 {{#operation}}
-        double {{operationId}}PerSecond = config.getDouble("performance.operationsPerSecond.{{operationId}}") * rateMultiplier * instanceMultiplier;
-{{/operation}}
-{{/operations}}
-
-        List<PopulationBuilder> scenarioBuilders = new ArrayList<>();
-
-{{#operations}}
-{{#operation}}
-        {{#description}}/* {{{.}}} */{{/description}}
-        ScenarioBuilder scn{{operationId}} = scenario("{{operationId}}Simulation")
-    {{#vendorExtensions.x-gatling-query-feeder}}
-            .feed(csv(userDataDirectory + File.separator + "{{operationId}}-queryParams.csv").random())
-    {{/vendorExtensions.x-gatling-query-feeder}}
-    {{#vendorExtensions.x-gatling-header-feeder}}
-            .feed(csv(userDataDirectory + File.separator + "{{operationId}}-headerParams.csv").random())
-    {{/vendorExtensions.x-gatling-header-feeder}}
-    {{#vendorExtensions.x-gatling-form-feeder}}
-            .feed(csv(userDataDirectory + File.separator + "{{operationId}}-formParams.csv").random())
-    {{/vendorExtensions.x-gatling-form-feeder}}
-    {{#vendorExtensions.x-gatling-body-feeder}}
-            .feed(csv(userDataDirectory + File.separator + "{{operationId}}-bodyParams.csv", '\\').random())
-    {{/vendorExtensions.x-gatling-body-feeder}}
-    {{#vendorExtensions.x-gatling-path-feeder}}
-            .feed(csv(userDataDirectory + File.separator + "{{operationId}}-pathParams.csv").random())
-    {{/vendorExtensions.x-gatling-path-feeder}}
-            .exec(http("{{operationId}}")
+    /**
+     * {{summary}}{{#notes}}
+     * <p>{{{notes}}}{{/notes}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     *{{#hasBodyParam}}
+     * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     * @return a {@link ChainBuilder} wrapping the HTTP request
+     */
+    public static ChainBuilder {{operationId}}({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+        return exec(
+            http("{{operationId}}")
                 .{{vendorExtensions.x-gatling-java-http-method}}("{{{vendorExtensions.x-gatling-path}}}")
-        {{#vendorExtensions.x-gatling-query-params}}
-                .queryParam("{{gatlingParamName}}", "{{gatlingParamValue}}")
-        {{/vendorExtensions.x-gatling-query-params}}
-        {{#vendorExtensions.x-gatling-header-params}}
+{{#queryParams}}
+                .queryParam("{{baseName}}", {{paramName}})
+{{/queryParams}}
+{{#vendorExtensions.x-gatling-header-params}}
                 .header("{{gatlingParamName}}", "{{gatlingParamValue}}")
-        {{/vendorExtensions.x-gatling-header-params}}
-        {{#vendorExtensions.x-gatling-form-params}}
+{{/vendorExtensions.x-gatling-header-params}}
+{{#vendorExtensions.x-gatling-form-params}}
                 .formParam("{{gatlingParamName}}", "{{gatlingParamValue}}")
-        {{/vendorExtensions.x-gatling-form-params}}
-        {{#vendorExtensions.x-gatling-body-object}}
-                .body(StringBody({{{vendorExtensions.x-gatling-body-object}}}{{#vendorExtensions.x-gatling-body-feeder-params}}({{{vendorExtensions.x-gatling-body-feeder-params}}}){{/vendorExtensions.x-gatling-body-feeder-params}}))
-        {{/vendorExtensions.x-gatling-body-object}}
-            );
-
-        scenarioBuilders.add(
-            scn{{operationId}}.injectOpen(
-                rampUsersPerSec(1.0).to({{operationId}}PerSecond).during(rampUpSeconds),
-                constantUsersPerSec({{operationId}}PerSecond).during(durationSeconds),
-                rampUsersPerSec({{operationId}}PerSecond).to(1.0).during(rampDownSeconds)
-            )
+{{/vendorExtensions.x-gatling-form-params}}
+{{#hasBodyParam}}
+                .body(StringBody(body.toStringBody()))
+{{/hasBodyParam}}
         );
+    }
 
 {{/operation}}
 {{/operations}}
-        setUp(scenarioBuilders)
-            .protocols(httpProtocol)
-            .assertions(
-                global().responseTime().min().lte(globalResponseTimeMinLTE),
-                global().responseTime().min().gte(globalResponseTimeMinGTE),
-                global().responseTime().max().lte(globalResponseTimeMaxLTE),
-                global().responseTime().max().gte(globalResponseTimeMaxGTE),
-                global().responseTime().mean().lte(globalResponseTimeMeanLTE),
-                global().responseTime().mean().gte(globalResponseTimeMeanGTE),
-                global().failedRequests().percent().lte(globalResponseTimeFailedRequestsPercentLTE),
-                global().failedRequests().percent().gte(globalResponseTimeFailedRequestsPercentGTE),
-                global().successfulRequests().percent().lte(globalResponseTimeSuccessfulRequestsPercentLTE),
-                global().successfulRequests().percent().gte(globalResponseTimeSuccessfulRequestsPercentGTE)
-            );
-    }
 }

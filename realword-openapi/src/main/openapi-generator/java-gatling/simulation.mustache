@@ -1,0 +1,149 @@
+package {{package}};
+
+import {{modelPackage}}.*;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import io.gatling.javaapi.core.PopulationBuilder;
+import io.gatling.javaapi.core.ScenarioBuilder;
+import io.gatling.javaapi.core.Simulation;
+import io.gatling.javaapi.http.HttpProtocolBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static io.gatling.javaapi.core.CoreDsl.*;
+import static io.gatling.javaapi.http.HttpDsl.http;
+
+/**
+ * Sample Gatling simulation for {{classname}} operations.
+ *
+ * <p>HTTP actions are delegated to {@link {{classname}}} for reuse across simulations.
+ * Fake data is injected directly into the Gatling session — no CSV feeders required.
+ * Replace the sample values with realistic test data or a custom feeder as needed.
+ */
+public class {{classname}}SampleSimulation extends Simulation {
+
+    private static final double TARGET_RPS = 1.0;
+
+    /** Fallback values used when no external config file is present. */
+    private static final Config FALLBACK = ConfigFactory.parseString(String.join("\n",
+        "performance.baseUrl = \"{{basePath}}\"",
+        "performance.authorizationHeader = \"~MANUAL_ENTRY~\"",
+        "performance.rampUpSeconds = 60",
+        "performance.rampDownSeconds = 60",
+        "performance.durationSeconds = 360",
+        "performance.contentType = \"application/json\"",
+        "performance.acceptType = \"application/json\"",
+        "performance.global.assertions.responseTime.min.lte = 30000",
+        "performance.global.assertions.responseTime.min.gte = 0",
+        "performance.global.assertions.responseTime.max.lte = 30000",
+        "performance.global.assertions.responseTime.max.gte = 0",
+        "performance.global.assertions.responseTime.mean.lte = 30000",
+        "performance.global.assertions.responseTime.mean.gte = 0",
+        "performance.global.assertions.failedRequests.percent.lte = 5",
+        "performance.global.assertions.failedRequests.percent.gte = 0",
+        "performance.global.assertions.successfulRequests.percent.lte = 100",
+        "performance.global.assertions.successfulRequests.percent.gte = 0"
+    ));
+
+    // ── Sample body factories — replace values with realistic test data as needed ──
+{{#operations}}
+{{#operation}}
+{{#hasBodyParam}}
+    private static {{bodyParam.dataType}} {{vendorExtensions.x-body-sample-method}}() {
+        return {{{vendorExtensions.x-body-sample}}};
+    }
+
+{{/hasBodyParam}}
+{{/operation}}
+{{/operations}}
+
+    public {{classname}}SampleSimulation() {
+        Config config = ConfigFactory.load(System.getProperty("testConfig", "baseline"))
+            .withFallback(ConfigFactory.load("default"))
+            .withFallback(FALLBACK);
+        int durationSeconds = config.getInt("performance.durationSeconds");
+        int rampUpSeconds = config.getInt("performance.rampUpSeconds");
+        int rampDownSeconds = config.getInt("performance.rampDownSeconds");
+        String baseUrl = config.getString("performance.baseUrl");
+        String authentication = config.getString("performance.authorizationHeader");
+        String acceptHeader = config.getString("performance.acceptType");
+        String contentTypeHeader = config.getString("performance.contentType");
+
+        int globalResponseTimeMinLTE = config.getInt("performance.global.assertions.responseTime.min.lte");
+        int globalResponseTimeMinGTE = config.getInt("performance.global.assertions.responseTime.min.gte");
+        int globalResponseTimeMaxLTE = config.getInt("performance.global.assertions.responseTime.max.lte");
+        int globalResponseTimeMaxGTE = config.getInt("performance.global.assertions.responseTime.max.gte");
+        int globalResponseTimeMeanLTE = config.getInt("performance.global.assertions.responseTime.mean.lte");
+        int globalResponseTimeMeanGTE = config.getInt("performance.global.assertions.responseTime.mean.gte");
+        double globalResponseTimeFailedRequestsPercentLTE = config.getDouble("performance.global.assertions.failedRequests.percent.lte");
+        double globalResponseTimeFailedRequestsPercentGTE = config.getDouble("performance.global.assertions.failedRequests.percent.gte");
+        double globalResponseTimeSuccessfulRequestsPercentLTE = config.getDouble("performance.global.assertions.successfulRequests.percent.lte");
+        double globalResponseTimeSuccessfulRequestsPercentGTE = config.getDouble("performance.global.assertions.successfulRequests.percent.gte");
+
+        HttpProtocolBuilder httpProtocol = http.baseUrl(baseUrl)
+            .doNotTrackHeader("1")
+            .acceptLanguageHeader("en-US,en;q=0.5")
+            .acceptEncodingHeader("gzip, deflate")
+            .userAgentHeader("Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0")
+            .acceptHeader(acceptHeader)
+            .contentTypeHeader(contentTypeHeader);
+
+        if (!authentication.equals("~MANUAL_ENTRY~")) {
+            httpProtocol = httpProtocol.authorizationHeader(authentication);
+        }
+
+        List<PopulationBuilder> scenarioBuilders = new ArrayList<>();
+
+{{#operations}}
+{{#operation}}
+        {{#description}}/* {{{.}}} */{{/description}}
+        ScenarioBuilder scn{{operationId}} = scenario("{{operationId}}Simulation")
+{{#vendorExtensions.x-gatling-path-feeder}}
+            // Inject fake path parameters into the session
+            .exec(session -> {
+                return session
+{{#pathParams}}
+                    .set("{{paramName}}", {{#isString}}"sample_{{paramName}}"{{/isString}}{{^isString}}1{{/isString}})
+{{/pathParams}}
+                ;
+            })
+{{/vendorExtensions.x-gatling-path-feeder}}
+{{#vendorExtensions.x-gatling-header-feeder}}
+            // Inject fake header parameters into the session
+            .exec(session -> {
+                return session
+{{#headerParams}}
+                    .set("{{paramName}}", "sample_{{paramName}}")
+{{/headerParams}}
+                ;
+            })
+{{/vendorExtensions.x-gatling-header-feeder}}
+            .exec({{classname}}.{{operationId}}({{{vendorExtensions.x-all-params-sample}}}));
+
+        scenarioBuilders.add(
+            scn{{operationId}}.injectOpen(
+                rampUsersPerSec(1.0).to(TARGET_RPS).during(rampUpSeconds),
+                constantUsersPerSec(TARGET_RPS).during(durationSeconds),
+                rampUsersPerSec(TARGET_RPS).to(1.0).during(rampDownSeconds)
+            )
+        );
+
+{{/operation}}
+{{/operations}}
+        setUp(scenarioBuilders)
+            .protocols(httpProtocol)
+            .assertions(
+                global().responseTime().min().lte(globalResponseTimeMinLTE),
+                global().responseTime().min().gte(globalResponseTimeMinGTE),
+                global().responseTime().max().lte(globalResponseTimeMaxLTE),
+                global().responseTime().max().gte(globalResponseTimeMaxGTE),
+                global().responseTime().mean().lte(globalResponseTimeMeanLTE),
+                global().responseTime().mean().gte(globalResponseTimeMeanGTE),
+                global().failedRequests().percent().lte(globalResponseTimeFailedRequestsPercentLTE),
+                global().failedRequests().percent().gte(globalResponseTimeFailedRequestsPercentGTE),
+                global().successfulRequests().percent().lte(globalResponseTimeSuccessfulRequestsPercentLTE),
+                global().successfulRequests().percent().gte(globalResponseTimeSuccessfulRequestsPercentGTE)
+            );
+    }
+}
