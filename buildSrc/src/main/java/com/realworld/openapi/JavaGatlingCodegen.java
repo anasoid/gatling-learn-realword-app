@@ -1,5 +1,9 @@
 package com.realworld.openapi;
 
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
@@ -13,8 +17,13 @@ import org.openapitools.codegen.model.OperationsMap;
 import org.openapitools.codegen.utils.ModelUtils;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,6 +49,74 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
     @Override
     public String getHelp() {
         return "Generates Gatling Java simulations from the Scala Gatling preprocessing pipeline.";
+    }
+
+    /**
+     * Mirrors ScalaGatling preprocessing but skips CSV feeder file creation.
+     */
+    @Override
+    public void preprocessOpenAPI(OpenAPI openAPI) {
+        for (Map.Entry<String, PathItem> pathEntry : openAPI.getPaths().entrySet()) {
+            String pathname = pathEntry.getKey();
+            PathItem path = pathEntry.getValue();
+            if (path.readOperations() == null) {
+                continue;
+            }
+            for (Operation operation : path.readOperations()) {
+                if (operation.getExtensions() == null) {
+                    operation.setExtensions(new HashMap<>());
+                }
+
+                if (!operation.getExtensions().containsKey("x-gatling-path")) {
+                    if (pathname.contains("{")) {
+                        operation.addExtension("x-gatling-path", pathname.replaceAll("\\{", "\\$\\{"));
+                    } else {
+                        operation.addExtension("x-gatling-path", pathname);
+                    }
+                }
+
+                Set<Parameter> headerParameters = new HashSet<>();
+                Set<Parameter> formParameters = new HashSet<>();
+                Set<Parameter> queryParameters = new HashSet<>();
+                Set<Parameter> pathParameters = new HashSet<>();
+
+                if (operation.getParameters() != null) {
+                    for (Parameter parameter : operation.getParameters()) {
+                        if ("header".equalsIgnoreCase(parameter.getIn())) {
+                            headerParameters.add(parameter);
+                        }
+                        if ("query".equalsIgnoreCase(parameter.getIn())) {
+                            queryParameters.add(parameter);
+                        }
+                        if ("path".equalsIgnoreCase(parameter.getIn())) {
+                            pathParameters.add(parameter);
+                        }
+                    }
+                }
+
+                prepareGatlingExtensions(operation, headerParameters, "header");
+                prepareGatlingExtensions(operation, formParameters, "form");
+                prepareGatlingExtensions(operation, queryParameters, "query");
+                prepareGatlingExtensions(operation, pathParameters, "path");
+            }
+        }
+    }
+
+    private void prepareGatlingExtensions(Operation operation, Set<Parameter> parameters, String parameterType) {
+        if (parameters.isEmpty()) {
+            return;
+        }
+        List<Object> vendorList = new ArrayList<>();
+        for (Parameter parameter : parameters) {
+            Map<String, Object> extensionMap = new HashMap<>();
+            extensionMap.put("gatlingParamName", parameter.getName());
+            extensionMap.put("gatlingParamValue", "${" + parameter.getName() + "}");
+            vendorList.add(extensionMap);
+        }
+        String normalizedType = parameterType.toLowerCase(Locale.ROOT);
+        operation.addExtension("x-gatling-" + normalizedType + "-params", vendorList);
+        operation.addExtension("x-gatling-" + normalizedType + "-feeder",
+            operation.getOperationId() + parameterType.toUpperCase(Locale.ROOT) + "Feeder");
     }
 
     /**

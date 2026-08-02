@@ -23,9 +23,9 @@ tasks.register('generateRealworldGatling', org.openapitools.generator.gradle.plu
   inputSpec.set(realworldOpenApiSpec.asFile.absolutePath)
   outputDir.set(generatedGatlingDir.get().asFile.absolutePath)
   templateDir.set(gatlingTemplateDir)
-  apiPackage.set('com.realworld.gatling.api')
-  modelPackage.set('com.realworld.gatling.model')
-  invokerPackage.set('com.realworld.gatling.core')
+  apiPackage.set('com.realworld.gatling.generated.api')
+  modelPackage.set('com.realworld.gatling.generated.model')
+  invokerPackage.set('com.realworld.gatling.generated.core')
   configOptions.set([
     dateLibrary: 'java8'
   ])
