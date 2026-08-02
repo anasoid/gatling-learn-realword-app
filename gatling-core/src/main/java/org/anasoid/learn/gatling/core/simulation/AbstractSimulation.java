@@ -22,14 +22,19 @@ import lombok.Getter;
  * @author : anasoid
  * Date :   8/2/26
  */
-public class AbstractSimulation extends Simulation {
+public abstract class AbstractSimulation extends Simulation {
+
+
   @Getter private final String baseUrl;
   @Getter private final Config config;
 
   public AbstractSimulation() {
+    String testConfig = System.getProperty("testConfig", "baseline");
     config =
-        ConfigFactory.load(System.getProperty("testConfig", "baseline"))
-            .withFallback(ConfigFactory.load("default"));
+        ConfigFactory.load(testConfig)
+            .withFallback(ConfigFactory.load("gatling"))
+            .withFallback(ConfigFactory.load())
+            .resolve();
     baseUrl = config.getString("performance.baseUrl");
   }
 }

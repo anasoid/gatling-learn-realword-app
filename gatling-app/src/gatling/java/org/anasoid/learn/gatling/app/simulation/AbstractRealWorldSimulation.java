@@ -1,9 +1,9 @@
 package org.anasoid.learn.gatling.app.simulation;
 
+import static io.gatling.javaapi.http.HttpDsl.http;
+
 import io.gatling.javaapi.http.HttpProtocolBuilder;
 import org.anasoid.learn.gatling.core.simulation.AbstractSimulation;
-
-import static io.gatling.javaapi.http.HttpDsl.http;
 
 /*
  * Copyright 2023-2026 the original author or authors.
@@ -21,27 +21,20 @@ import static io.gatling.javaapi.http.HttpDsl.http;
  * limitations under the License.
  * @author : anasoid
  * Date :   8/2/26
- */ public class AbstractRealWorldSimulation extends AbstractSimulation {
+ */
+public abstract class AbstractRealWorldSimulation extends AbstractSimulation {
 
-    public AbstractRealWorldSimulation() {
-        super();
-        int durationSeconds = getConfig().getInt("performance.durationSeconds");
-        int rampUpSeconds = getConfig().getInt("performance.rampUpSeconds");
-        int rampDownSeconds = getConfig().getInt("performance.rampDownSeconds");
-        String authentication = getConfig().getString("performance.authorizationHeader");
-        String acceptHeader = getConfig().getString("performance.acceptType");
-        String contentTypeHeader = getConfig().getString("performance.contentType");
+  public AbstractRealWorldSimulation() {
+    super();
+  }
 
-
-    }
-
-    HttpProtocolBuilder getHttpProtocolBuilder(){
-        return  http.baseUrl(getBaseUrl())
-                .doNotTrackHeader("1")
-                .acceptLanguageHeader("en-US,en;q=0.5")
-                .acceptEncodingHeader("gzip, deflate")
-                .userAgentHeader("Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0")
-                .acceptHeader("application/json")
-                .contentTypeHeader("application/json");
-    }
+  HttpProtocolBuilder getHttpProtocolBuilder() {
+    return http.baseUrl(getBaseUrl())
+        .doNotTrackHeader("1")
+        .acceptLanguageHeader("en-US,en;q=0.5")
+        .acceptEncodingHeader("gzip, deflate")
+        .userAgentHeader("Mozilla/5.0 (Windows NT 5.1; rv:31.0) Gecko/20100101 Firefox/31.0")
+        .acceptHeader("application/json")
+        .contentTypeHeader("application/json");
+  }
 }

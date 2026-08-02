@@ -2,6 +2,7 @@ package {{package}};
 
 import {{modelPackage}}.*;
 import io.gatling.javaapi.core.ChainBuilder;
+import io.gatling.javaapi.http.HttpRequestActionBuilder;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
@@ -29,11 +30,10 @@ public class {{classname}} {
      * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
      *{{#hasBodyParam}}
      * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
-     * @return a {@link ChainBuilder} wrapping the HTTP request
+     * @return a request builder that can be extended with checks/headers before execution
      */
-    public static ChainBuilder {{operationId}}({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
-        return exec(
-            http("{{operationId}}")
+    public static HttpRequestActionBuilder {{operationId}}Request({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+        return http("{{operationId}}")
                 .{{vendorExtensions.x-gatling-java-http-method}}("{{{vendorExtensions.x-gatling-path}}}")
 {{#queryParams}}
                 .queryParam("{{baseName}}", {{paramName}})
@@ -47,7 +47,20 @@ public class {{classname}} {
 {{#hasBodyParam}}
                 .body(StringBody(body.toStringBody()))
 {{/hasBodyParam}}
-        );
+        ;
+    }
+
+    /**
+     * {{summary}}{{#notes}}
+     * <p>{{{notes}}}{{/notes}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     *{{#hasBodyParam}}
+     * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     * @return a {@link ChainBuilder} wrapping the HTTP request
+     */
+    public static ChainBuilder {{operationId}}({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+        return exec({{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}}));
     }
 
 {{/operation}}
