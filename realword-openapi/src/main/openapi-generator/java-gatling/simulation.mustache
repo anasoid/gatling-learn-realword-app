@@ -17,7 +17,7 @@ import static io.gatling.javaapi.http.HttpDsl.http;
 /**
  * Sample Gatling simulation for {{classname}} operations.
  *
- * <p>HTTP actions are delegated to {@link {{classname}}} for reuse across simulations.
+ * <p>HTTP actions are delegated to {@link Default{{classname}}} for reuse across simulations.
  * Fake data is injected directly into the Gatling session — no CSV feeders required.
  * Replace the sample values with realistic test data or a custom feeder as needed.
  */
@@ -119,7 +119,7 @@ public class {{classname}}SampleSimulation extends Simulation {
                 ;
             })
 {{/vendorExtensions.x-gatling-header-feeder}}
-            .exec({{classname}}.{{operationId}}({{{vendorExtensions.x-all-params-sample}}}));
+            .exec(Default{{classname}}.{{operationId}}({{{vendorExtensions.x-all-params-sample}}}));
 
         scenarioBuilders.add(
             scn{{operationId}}.injectOpen(

@@ -40,6 +40,7 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
 
         apiTemplateFiles.clear();
         apiTemplateFiles.put("api.mustache", ".java");
+        apiTemplateFiles.put("api-default.mustache", ".java");
         apiTemplateFiles.put("simulation.mustache", "SampleSimulation.java");
 
         modelTemplateFiles.clear();
@@ -54,6 +55,30 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
     @Override
     public String getHelp() {
         return "Generates Gatling Java simulations from the Scala Gatling preprocessing pipeline.";
+    }
+
+    /**
+     * Splits each API tag into two generated classes: the fully generated
+     * {@code Generated{Api}} (produced by {@code api.mustache}, holds all the actual request
+     * methods) and a thin {@code Default{Api}} (produced by {@code api-default.mustache}) that
+     * extends it. {@code Default{Api}} is the class simulations/tests should reference; the
+     * {@code Generated} prefix on the base class signals it is fully regenerated on every build
+     * and should never be hand-edited.
+     * <p>
+     * {@link #apiFilename} normally derives both the output filename and the {@code classname}
+     * from {@link #toApiName}, shared across every template registered for a tag. Overriding it
+     * here lets the two templates for the same tag produce differently-prefixed filenames
+     * without affecting {@code toApiName}/{@code classname} elsewhere (e.g. model imports).
+     */
+    @Override
+    public String apiFilename(String templateName, String tag) {
+        if ("api.mustache".equals(templateName)) {
+            return apiFileFolder() + File.separator + "Generated" + toApiFilename(tag) + apiTemplateFiles().get(templateName);
+        }
+        if ("api-default.mustache".equals(templateName)) {
+            return apiFileFolder() + File.separator + "Default" + toApiFilename(tag) + apiTemplateFiles().get(templateName);
+        }
+        return super.apiFilename(templateName, tag);
     }
 
     /**

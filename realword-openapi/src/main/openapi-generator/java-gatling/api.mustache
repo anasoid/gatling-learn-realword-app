@@ -8,7 +8,12 @@ import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
 /**
- * Reusable Gatling API actions for {{classname}} operations.
+ * Fully generated Gatling API actions for {{classname}} operations.
+ *
+ * <p>This class is regenerated from the OpenAPI contract on every build — do not edit it
+ * directly or add custom logic here, as changes will be overwritten. Use
+ * {@link Default{{classname}}} instead, which extends this class and is the stable entry point
+ * simulations/tests should reference.
  *
  * <p>Each method returns a {@link ChainBuilder} that can be composed directly into scenarios.
  * Path parameters are resolved via Gatling EL session variables (e.g. {@code #{username}}).
@@ -16,10 +21,10 @@ import static io.gatling.javaapi.http.HttpDsl.*;
  * <p>Example usage:
  * <pre>{@code
  * ScenarioBuilder scn = scenario("Login flow")
- *     .exec({{classname}}.login(new LoginRequest().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"))));
+ *     .exec(Default{{classname}}.login(new LoginRequest().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"))));
  * }</pre>
  */
-public class {{classname}} {
+public class Generated{{classname}} {
 
 {{#operations}}
 {{#operation}}

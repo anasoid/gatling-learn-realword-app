@@ -3,7 +3,7 @@ package org.anasoid.learn.gatling.app.simulation;
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
-import com.realworld.gatling.generated.api.UserAndAuthenticationApi;
+import com.realworld.gatling.generated.api.DefaultUserAndAuthenticationApi;
 import com.realworld.gatling.generated.model.LoginUser;
 import com.realworld.gatling.generated.model.LoginUserEnvelope;
 import com.realworld.gatling.generated.model.NewUser;
@@ -42,19 +42,19 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
         scenario("registerAndCheckCurrentUser")
             .feed(users.iterator())
             .exec(
-                UserAndAuthenticationApi.createUserRequest(createUserRequestWithSessionValues())
+                DefaultUserAndAuthenticationApi.createUserRequest(createUserRequestWithSessionValues())
                     .check(status().is(201))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
                     .check(jsonPath("$.user.email").isEL("#{email}")))
             .exitHereIfFailed()
             .exec(
-                UserAndAuthenticationApi.loginRequest(loginRequestWithSessionValues())
+                DefaultUserAndAuthenticationApi.loginRequest(loginRequestWithSessionValues())
                     .check(status().is(200))
                     .check(jsonPath("$.user.token").saveAs("token")))
             .exitHereIfFailed()
             .exec(RegisterSimulation::appendLoggedInUserCsv)
             .exec(
-                UserAndAuthenticationApi.getCurrentUserRequest()
+                DefaultUserAndAuthenticationApi.getCurrentUserRequest()
                     .header("Authorization", "Token #{token}")
                     .check(status().is(200))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
