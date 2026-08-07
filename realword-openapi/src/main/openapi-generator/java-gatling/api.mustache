@@ -21,7 +21,8 @@ import static io.gatling.javaapi.http.HttpDsl.*;
  * simulations/tests should reference.
  *
  * <p>Each method returns a {@link ChainBuilder} that can be composed directly into scenarios.
- * Path parameters are resolved via Gatling EL session variables (e.g. {@code #{username}}).
+ * Path parameters are explicit method arguments (in URL order); pass a Gatling EL string (e.g.
+ * {@code "#{username}"}) to resolve them from the session at runtime if needed.
  *
  * <p>Example usage:
  * <pre>{@code
@@ -43,15 +44,17 @@ public class Generated{{classname}} {
     /**
      * {{summary}}{{#notes}}
      * <p>{{{notes}}}{{/notes}}
-     *{{#queryParams}}
-     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     *{{#pathParams}}
+     * @param {{paramName}} {{baseName}} path parameter{{/pathParams}}
      *{{#hasBodyParam}}
      * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
      * @return a request builder that can be extended with checks/headers before execution
      */
-    public HttpRequestActionBuilder {{operationId}}Request({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+    public HttpRequestActionBuilder {{operationId}}Request({{{vendorExtensions.x-gatling-params-decl}}}) {
         return http("{{operationId}}")
-                .{{vendorExtensions.x-gatling-java-http-method}}("{{{vendorExtensions.x-gatling-path}}}")
+                .{{vendorExtensions.x-gatling-java-http-method}}({{{vendorExtensions.x-gatling-request-path-expr}}})
 {{#queryParams}}
                 .queryParam("{{baseName}}", {{paramName}})
 {{/queryParams}}
@@ -86,14 +89,16 @@ public class Generated{{classname}} {
     /**
      * {{summary}}{{#notes}}
      * <p>{{{notes}}}{{/notes}}
-     *{{#queryParams}}
-     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     *{{#pathParams}}
+     * @param {{paramName}} {{baseName}} path parameter{{/pathParams}}
      *{{#hasBodyParam}}
      * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
      * @return a {@link ChainBuilder} wrapping the HTTP request
      */
-    public ChainBuilder {{operationId}}({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
-        return exec(this.{{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}}));
+    public ChainBuilder {{operationId}}({{{vendorExtensions.x-gatling-params-decl}}}) {
+        return exec(this.{{operationId}}Request({{{vendorExtensions.x-gatling-params-call}}}));
     }
 
 {{#returnType}}
@@ -106,14 +111,16 @@ public class Generated{{classname}} {
     /**
      * {{summary}}{{#notes}}
      * <p>{{{notes}}}{{/notes}}
-     *{{#queryParams}}
-     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     *{{#pathParams}}
+     * @param {{paramName}} {{baseName}} path parameter{{/pathParams}}
      *{{#hasBodyParam}}
      * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
      * @return a {@link ChainBuilder} that stores the parsed response model under {@link #{{vendorExtensions.x-response-key-constant}}}
      */
-    public ChainBuilder {{operationId}}AndParseResponse({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
-        return exec(this.{{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}})
+    public ChainBuilder {{operationId}}AndParseResponse({{{vendorExtensions.x-gatling-params-decl}}}) {
+        return exec(this.{{operationId}}Request({{{vendorExtensions.x-gatling-params-call}}})
             .check(bodyString().transform({{returnType}}::fromJson).saveAs({{vendorExtensions.x-response-key-constant}})));
     }
 

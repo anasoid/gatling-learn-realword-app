@@ -31,6 +31,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,12 +128,12 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                     operation.setExtensions(new HashMap<>());
                 }
 
+                // Kept as the raw OpenAPI path (e.g. "/articles/{slug}/comments"), with the
+                // {name} placeholders resolved from actual method parameters — not Gatling EL
+                // session lookups — via x-gatling-path-format built in
+                // postProcessOperationsWithModels.
                 if (!operation.getExtensions().containsKey("x-gatling-path")) {
-                    if (pathname.contains("{")) {
-                        operation.addExtension("x-gatling-path", pathname.replaceAll("\\{", "\\$\\{"));
-                    } else {
-                        operation.addExtension("x-gatling-path", pathname);
-                    }
+                    operation.addExtension("x-gatling-path", pathname);
                 }
 
                 Set<Parameter> headerParameters = new HashSet<>();
@@ -356,6 +358,8 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                     operation.httpMethod.toLowerCase(Locale.ROOT)
                 );
 
+                buildGatlingPathFormat(operation);
+
                 // Expected HTTP status code for the operation's success response, taken from the
                 // contract itself (first non-default 2xx response), so the generated request
                 // check stays in sync with the OpenAPI spec instead of assuming 200 everywhere.
@@ -378,7 +382,36 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                         screamingSnakeCase(operation.operationId) + "_RESPONSE_KEY");
                 }
 
-                // Build combined sample-call argument list (body + query params)
+                // Build the method parameter list shared by {op}Request()/{op}()/
+                // {op}AndParseResponse(): path params (in URL order), then the body param, then
+                // query params. Built once here (instead of ad-hoc comma-joining in the
+                // template) so path parameters are never silently dropped from the signature.
+                List<String> declParts = new ArrayList<>();
+                List<String> callParts = new ArrayList<>();
+                if (operation.pathParams != null) {
+                    for (CodegenParameter pathParam : operation.pathParams) {
+                        declParts.add(pathParam.dataType + " " + pathParam.paramName);
+                        callParts.add(pathParam.paramName);
+                    }
+                }
+                if (operation.bodyParam != null) {
+                    declParts.add(operation.bodyParam.dataType + " body");
+                    callParts.add("body");
+                }
+                if (operation.queryParams != null) {
+                    for (CodegenParameter queryParam : operation.queryParams) {
+                        declParts.add(queryParam.dataType + " " + queryParam.paramName);
+                        callParts.add(queryParam.paramName);
+                    }
+                }
+                operation.vendorExtensions.put("x-gatling-params-decl", String.join(", ", declParts));
+                operation.vendorExtensions.put("x-gatling-params-call", String.join(", ", callParts));
+
+                // Build combined sample-call argument list (path params + body + query params)
+                String pathArgs = operation.pathParams == null ? "" :
+                    operation.pathParams.stream()
+                        .map(this::sampleValueForParam)
+                        .collect(Collectors.joining(", "));
                 String bodyArg = operation.bodyParam != null
                     ? (String) operation.vendorExtensions.get("x-body-sample-method") + "()"
                     : "";
@@ -387,13 +420,50 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                         .map(this::sampleValueForParam)
                         .collect(Collectors.joining(", "));
                 operation.vendorExtensions.put("x-all-params-sample",
-                    Stream.of(bodyArg, queryArgs)
+                    Stream.of(pathArgs, bodyArg, queryArgs)
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.joining(", ")));
             }
         }
 
         return processed;
+    }
+
+    /**
+     * Builds the Java expression used as the argument to the Gatling HTTP method call
+     * (e.g. {@code .post(...)}). Path parameters are passed explicitly as method arguments and
+     * substituted via {@link String#format}, instead of relying on a Gatling EL session lookup
+     * (e.g. {@code ${slug}}) that the caller would otherwise have to populate into the session
+     * out-of-band. Assembled as a single ready-to-emit expression (rather than separate
+     * format/args vendor extensions) because Mustache section contexts (e.g. iterating
+     * {@code pathParams}) shadow the parent operation's {@code vendorExtensions}, making it
+     * awkward to reference operation-level values from within a parameter loop in the template.
+     */
+    private void buildGatlingPathFormat(CodegenOperation operation) {
+        String rawPath = String.valueOf(operation.vendorExtensions.getOrDefault("x-gatling-path", operation.path));
+
+        if (operation.pathParams == null || operation.pathParams.isEmpty()) {
+            operation.vendorExtensions.put("x-gatling-request-path-expr", "\"" + rawPath + "\"");
+            return;
+        }
+
+        Map<String, String> javaNameByBaseName = operation.pathParams.stream()
+            .collect(Collectors.toMap(p -> p.baseName, p -> p.paramName, (a, b) -> a));
+
+        Matcher matcher = Pattern.compile("\\{([^}]+)}").matcher(rawPath);
+        StringBuilder format = new StringBuilder();
+        List<String> orderedArgs = new ArrayList<>();
+        int last = 0;
+        while (matcher.find()) {
+            format.append(rawPath, last, matcher.start()).append("%s");
+            String placeholder = matcher.group(1);
+            orderedArgs.add(javaNameByBaseName.getOrDefault(placeholder, placeholder));
+            last = matcher.end();
+        }
+        format.append(rawPath.substring(last));
+
+        operation.vendorExtensions.put("x-gatling-request-path-expr",
+            "String.format(\"" + format + "\", " + String.join(", ", orderedArgs) + ")");
     }
 
     /**
