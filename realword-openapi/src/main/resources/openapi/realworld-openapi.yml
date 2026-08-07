@@ -501,6 +501,13 @@ components:
           type:
             - string
             - 'null'
+    UserEnvelope:
+      required:
+        - user
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
     UpdateUser:
       type: object
       properties:
@@ -759,12 +766,7 @@ components:
       content:
         application/json:
           schema:
-            required:
-              - user
-            type: object
-            properties:
-              user:
-                $ref: '#/components/schemas/User'
+            $ref: '#/components/schemas/UserEnvelope'
     EmptyOkResponse:
       description: No content
       content: { }

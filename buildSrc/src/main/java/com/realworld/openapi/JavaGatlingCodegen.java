@@ -3,7 +3,11 @@ package com.realworld.openapi;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.Content;
+import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
@@ -11,6 +15,7 @@ import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenProperty;
+import org.openapitools.codegen.InlineModelResolver;
 import org.openapitools.codegen.languages.ScalaGatlingCodegen;
 import org.openapitools.codegen.model.ModelMap;
 import org.openapitools.codegen.model.OperationsMap;
@@ -52,10 +57,37 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
     }
 
     /**
+     * We resolve inline models ourselves (see {@link #preprocessOpenAPI}) so that generic,
+     * single-property "envelope" wrapper schemas (e.g. {@code { user: {$ref: ...} }}) get a
+     * semantic {@code title} assigned before flattening, instead of the generator's default
+     * sequential {@code InlineObjectN} naming. Disabling the built-in resolver here just skips
+     * the automatic run in {@code DefaultGenerator}; we still flatten inline models ourselves.
+     */
+    @Override
+    public boolean getUseInlineModelResolver() {
+        return false;
+    }
+
+    /**
      * Mirrors ScalaGatling preprocessing but skips CSV feeder file creation.
+     * <p>
+     * Also performs our own inline-model flattening pass (since the generator's automatic one is
+     * disabled via {@link #getUseInlineModelResolver()}), after first assigning semantic titles to
+     * generic single-property "envelope" wrapper schemas found in request bodies and responses.
+     * This produces meaningful model names (e.g. {@code ArticleEnvelope}, {@code TagsEnvelope})
+     * instead of {@code InlineObjectN}, purely from the schema's own structure — no dependency on
+     * operation IDs, paths, or hardcoded contract-specific names, and without modifying the OpenAPI
+     * contract file itself (titles are assigned in-memory to the parsed model only).
      */
     @Override
     public void preprocessOpenAPI(OpenAPI openAPI) {
+        assignEnvelopeSchemaTitles(openAPI);
+
+        InlineModelResolver inlineModelResolver = new InlineModelResolver();
+        inlineModelResolver.setInlineSchemaNameMapping(this.inlineSchemaNameMapping());
+        inlineModelResolver.setInlineSchemaOptions(this.inlineSchemaOption());
+        org.openapitools.codegen.InlineModelResolverAccess.flatten(inlineModelResolver, openAPI);
+
         for (Map.Entry<String, PathItem> pathEntry : openAPI.getPaths().entrySet()) {
             String pathname = pathEntry.getKey();
             PathItem path = pathEntry.getValue();
@@ -100,6 +132,152 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                 prepareGatlingExtensions(operation, pathParameters, "path");
             }
         }
+    }
+
+    // ── generic envelope-schema naming ───────────────────────────────────────
+
+    /**
+     * Walks every request body and response schema in the spec (both reusable
+     * {@code components/requestBodies}/{@code components/responses} entries and any defined
+     * inline on an operation) and assigns a semantic {@link Schema#setTitle(String) title} to
+     * anonymous single-property "envelope" wrapper schemas, e.g.:
+     * <pre>
+     *   required: [article]
+     *   type: object
+     *   properties:
+     *     article:
+     *       $ref: '#/components/schemas/Article'
+     * </pre>
+     * gets titled {@code ArticleEnvelope}. The {@link InlineModelResolver} (run right after this
+     * method, in {@link #preprocessOpenAPI}) uses a schema's {@code title} as its generated class
+     * name when present, so this gives these wrappers meaningful names instead of the default
+     * sequential {@code InlineObjectN} fallback — purely from the wrapped property's own name/
+     * type, with no hardcoded mapping and no dependency on operationId or path.
+     */
+    private void assignEnvelopeSchemaTitles(OpenAPI openAPI) {
+        if (openAPI.getComponents() != null) {
+            if (openAPI.getComponents().getRequestBodies() != null) {
+                for (RequestBody requestBody : openAPI.getComponents().getRequestBodies().values()) {
+                    titleEnvelopeContent(requestBody.getContent());
+                }
+            }
+            if (openAPI.getComponents().getResponses() != null) {
+                for (ApiResponse response : openAPI.getComponents().getResponses().values()) {
+                    titleEnvelopeContent(response.getContent());
+                }
+            }
+        }
+
+        if (openAPI.getPaths() != null) {
+            for (PathItem path : openAPI.getPaths().values()) {
+                if (path.readOperations() == null) {
+                    continue;
+                }
+                for (Operation operation : path.readOperations()) {
+                    RequestBody requestBody = operation.getRequestBody();
+                    if (requestBody != null && requestBody.get$ref() == null) {
+                        titleEnvelopeContent(requestBody.getContent());
+                    }
+                    if (operation.getResponses() != null) {
+                        for (ApiResponse response : operation.getResponses().values()) {
+                            if (response.get$ref() == null) {
+                                titleEnvelopeContent(response.getContent());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void titleEnvelopeContent(Content content) {
+        if (content == null) {
+            return;
+        }
+        for (MediaType mediaType : content.values()) {
+            if (mediaType != null) {
+                titleEnvelopeSchema(mediaType.getSchema());
+            }
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void titleEnvelopeSchema(Schema schema) {
+        if (schema == null || schema.get$ref() != null || schema.getTitle() != null) {
+            return;
+        }
+        Map<String, Schema> properties = schema.getProperties();
+        if (properties == null || properties.isEmpty()) {
+            return;
+        }
+
+        Map.Entry<String, Schema> mainEntry = findMainProperty(properties);
+        if (mainEntry == null) {
+            // Couldn't confidently identify a single "main" property (e.g. several equally
+            // complex properties) — leave naming to the default resolver behaviour.
+            return;
+        }
+
+        String propertyName = mainEntry.getKey();
+        Schema<?> propertySchema = mainEntry.getValue();
+
+        boolean isArray = propertySchema instanceof ArraySchema;
+        Schema<?> itemSchema = isArray ? ((ArraySchema) propertySchema).getItems() : propertySchema;
+
+        String base;
+        if (itemSchema != null && itemSchema.get$ref() != null) {
+            base = simpleRefName(itemSchema.get$ref());
+            if (isArray) {
+                base = pluralize(base);
+            }
+        } else {
+            base = capitalize(propertyName);
+        }
+
+        schema.setTitle(base + "Envelope");
+    }
+
+    /**
+     * Picks the single "main" (non-scalar) property out of a wrapper schema's properties, e.g. for
+     * {@code { articles: [...], articlesCount: integer }} this returns the {@code articles}
+     * entry. Scalar metadata properties (strings, numbers, booleans) alongside exactly one
+     * array/object property are treated as auxiliary (e.g. pagination counts) and ignored. If
+     * there's exactly one property total, it is always the main one. If there is more than one
+     * non-scalar property, the schema doesn't clearly follow the single-payload "envelope"
+     * convention, so {@code null} is returned and naming is left to the default resolver.
+     */
+    @SuppressWarnings("rawtypes")
+    private Map.Entry<String, Schema> findMainProperty(Map<String, Schema> properties) {
+        if (properties.size() == 1) {
+            return properties.entrySet().iterator().next();
+        }
+
+        Map.Entry<String, Schema> mainEntry = null;
+        for (Map.Entry<String, Schema> entry : properties.entrySet()) {
+            Schema<?> propertySchema = entry.getValue();
+            boolean isScalar = propertySchema.get$ref() == null
+                && !(propertySchema instanceof ArraySchema)
+                && (propertySchema.getProperties() == null || propertySchema.getProperties().isEmpty());
+            if (!isScalar) {
+                if (mainEntry != null) {
+                    return null; // more than one candidate — ambiguous, bail out
+                }
+                mainEntry = entry;
+            }
+        }
+        return mainEntry;
+    }
+
+    private static String simpleRefName(String ref) {
+        int slash = ref.lastIndexOf('/');
+        return slash >= 0 ? ref.substring(slash + 1) : ref;
+    }
+
+    private static String pluralize(String s) {
+        if (s.endsWith("s")) {
+            return s;
+        }
+        return s + "s";
     }
 
     private void prepareGatlingExtensions(Operation operation, Set<Parameter> parameters, String parameterType) {

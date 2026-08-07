@@ -4,10 +4,10 @@ import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
 import com.realworld.gatling.generated.api.UserAndAuthenticationApi;
-import com.realworld.gatling.generated.model.CreateUserRequest;
-import com.realworld.gatling.generated.model.LoginRequest;
 import com.realworld.gatling.generated.model.LoginUser;
+import com.realworld.gatling.generated.model.LoginUserEnvelope;
 import com.realworld.gatling.generated.model.NewUser;
+import com.realworld.gatling.generated.model.NewUserEnvelope;
 import io.gatling.javaapi.core.PopulationBuilder;
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Session;
@@ -65,8 +65,8 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
     setUp(scenarioBuilders).protocols(httpProtocol);
   }
 
-  private static CreateUserRequest createUserRequestWithSessionValues() {
-    return new CreateUserRequest()
+  private static NewUserEnvelope createUserRequestWithSessionValues() {
+    return new NewUserEnvelope()
         .setUser(
             new NewUser()
                 .setUsername("#{username}")
@@ -74,8 +74,8 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
                 .setPassword("#{password}"));
   }
 
-  private static LoginRequest loginRequestWithSessionValues() {
-    return new LoginRequest().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"));
+  private static LoginUserEnvelope loginRequestWithSessionValues() {
+    return new LoginUserEnvelope().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"));
   }
 
   private static List<Map<String, Object>> buildUsers() {

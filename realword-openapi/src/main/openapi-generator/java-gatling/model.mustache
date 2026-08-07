@@ -1,5 +1,7 @@
 package {{package}};
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.time.OffsetDateTime;
@@ -87,6 +89,19 @@ public class {{classname}} {
             .replace("\t", "\\t");
     }
 {{/hasVars}}
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().findAndRegisterModules();
+
+    /**
+     * Parse a JSON payload into {{classname}}.
+     */
+    public static {{classname}} fromJson(String json) {
+        try {
+            return OBJECT_MAPPER.readValue(json, {{classname}}.class);
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Failed to parse {{classname}} JSON payload", ex);
+        }
+    }
+
 {{^hasVars}}
     /** Returns an empty JSON object body. */
     public String toStringBody() {

@@ -63,6 +63,25 @@ public class {{classname}} {
         return exec({{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}}));
     }
 
+{{#returnType}}
+    /**
+     * {{summary}}{{#notes}}
+     * <p>{{{notes}}}{{/notes}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     *{{#hasBodyParam}}
+     * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     * @return a {@link ChainBuilder} that stores parsed response model under "{{operationId}}Response"
+     */
+    public static ChainBuilder {{operationId}}AndParseResponse({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+        String responseSessionKey = "{{operationId}}Response";
+        String responseBodySessionKey = "{{operationId}}ResponseBody";
+        return exec({{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}})
+            .check(bodyString().saveAs(responseBodySessionKey)))
+            .exec(session -> session.set(responseSessionKey, {{returnType}}.fromJson(session.getString(responseBodySessionKey))));
+    }
+
+{{/returnType}}
 {{/operation}}
 {{/operations}}
 }
