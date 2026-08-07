@@ -2,7 +2,12 @@ package {{package}};
 
 import {{modelPackage}}.*;
 import io.gatling.javaapi.core.ChainBuilder;
+import io.gatling.javaapi.core.CheckBuilder;
 import io.gatling.javaapi.http.HttpRequestActionBuilder;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
@@ -21,10 +26,17 @@ import static io.gatling.javaapi.http.HttpDsl.*;
  * <p>Example usage:
  * <pre>{@code
  * ScenarioBuilder scn = scenario("Login flow")
- *     .exec(Default{{classname}}.login(new LoginRequest().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"))));
+ *     .exec(Default{{classname}}.instance().login(new LoginRequest().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"))));
  * }</pre>
  */
 public class Generated{{classname}} {
+
+    /**
+     * All HTTP status codes considered successful ({@code 2xx}) for the purpose of the default
+     * {@code *ExpectedStatusCheck()} implementations below.
+     */
+    private static final List<Integer> HTTP_SUCCESS_STATUSES =
+            IntStream.rangeClosed(200, 206).boxed().collect(Collectors.toList());
 
 {{#operations}}
 {{#operation}}
@@ -37,7 +49,7 @@ public class Generated{{classname}} {
      * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
      * @return a request builder that can be extended with checks/headers before execution
      */
-    public static HttpRequestActionBuilder {{operationId}}Request({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+    public HttpRequestActionBuilder {{operationId}}Request({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
         return http("{{operationId}}")
                 .{{vendorExtensions.x-gatling-java-http-method}}("{{{vendorExtensions.x-gatling-path}}}")
 {{#queryParams}}
@@ -52,8 +64,24 @@ public class Generated{{classname}} {
 {{#hasBodyParam}}
                 .body(StringBody(body.toStringBody()))
 {{/hasBodyParam}}
+{{#vendorExtensions.x-gatling-expected-status}}
+                .check(this.{{operationId}}ExpectedStatusCheck())
+{{/vendorExtensions.x-gatling-expected-status}}
         ;
     }
+
+{{#vendorExtensions.x-gatling-expected-status}}
+    /**
+     * Expected status check for {@link #{{operationId}}Request}. Defaults to accepting any
+     * {@code 2xx} status (the contract declares {{vendorExtensions.x-gatling-expected-status}} as
+     * the success response). Override in a {@link Default{{classname}}} subclass to require the
+     * exact contract status code, or any other custom logic.
+     */
+    protected CheckBuilder {{operationId}}ExpectedStatusCheck() {
+        return status().in(HTTP_SUCCESS_STATUSES);
+    }
+
+{{/vendorExtensions.x-gatling-expected-status}}
 
     /**
      * {{summary}}{{#notes}}
@@ -64,8 +92,8 @@ public class Generated{{classname}} {
      * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
      * @return a {@link ChainBuilder} wrapping the HTTP request
      */
-    public static ChainBuilder {{operationId}}({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
-        return exec({{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}}));
+    public ChainBuilder {{operationId}}({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+        return exec(this.{{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}}));
     }
 
 {{#returnType}}
@@ -84,8 +112,8 @@ public class Generated{{classname}} {
      * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
      * @return a {@link ChainBuilder} that stores the parsed response model under {@link #{{vendorExtensions.x-response-key-constant}}}
      */
-    public static ChainBuilder {{operationId}}AndParseResponse({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
-        return exec({{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}})
+    public ChainBuilder {{operationId}}AndParseResponse({{#hasBodyParam}}{{bodyParam.dataType}} body{{/hasBodyParam}}{{#queryParams}}{{#-first}}{{#hasBodyParam}}, {{/hasBodyParam}}{{/-first}}{{^-first}}, {{/-first}}{{{dataType}}} {{paramName}}{{/queryParams}}) {
+        return exec(this.{{operationId}}Request({{#hasBodyParam}}body{{/hasBodyParam}}{{#queryParams}}{{#hasBodyParam}}, {{/hasBodyParam}}{{paramName}}{{^-last}}, {{/-last}}{{/queryParams}})
             .check(bodyString().transform({{returnType}}::fromJson).saveAs({{vendorExtensions.x-response-key-constant}})));
     }
 

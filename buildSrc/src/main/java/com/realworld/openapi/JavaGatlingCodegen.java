@@ -15,6 +15,7 @@ import org.openapitools.codegen.CodegenModel;
 import org.openapitools.codegen.CodegenOperation;
 import org.openapitools.codegen.CodegenParameter;
 import org.openapitools.codegen.CodegenProperty;
+import org.openapitools.codegen.CodegenResponse;
 import org.openapitools.codegen.InlineModelResolver;
 import org.openapitools.codegen.languages.ScalaGatlingCodegen;
 import org.openapitools.codegen.model.ModelMap;
@@ -28,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -354,6 +356,12 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                     operation.httpMethod.toLowerCase(Locale.ROOT)
                 );
 
+                // Expected HTTP status code for the operation's success response, taken from the
+                // contract itself (first non-default 2xx response), so the generated request
+                // check stays in sync with the OpenAPI spec instead of assuming 200 everywhere.
+                findExpectedStatusCode(operation)
+                    .ifPresent(code -> operation.vendorExtensions.put("x-gatling-expected-status", code));
+
                 if (operation.bodyParam != null && operation.bodyParam.dataType != null) {
                     String methodName = "sample" + capitalize(operation.operationId) + "Body";
                     operation.vendorExtensions.put("x-body-sample-method", methodName);
@@ -386,6 +394,30 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
         }
 
         return processed;
+    }
+
+    /**
+     * Finds the expected success HTTP status code declared for an operation in the OpenAPI
+     * contract itself (a non-default {@code 2xx} response), so generated status checks stay in
+     * sync with the contract instead of hardcoding an assumed code like {@code 200}. Falls back
+     * to any non-default response with a numeric code if no {@code 2xx} entry is present, and to
+     * empty (no check emitted) if the contract defines no explicit responses at all.
+     */
+    private Optional<String> findExpectedStatusCode(CodegenOperation operation) {
+        if (operation.responses == null) {
+            return Optional.empty();
+        }
+        Optional<String> twoXx = operation.responses.stream()
+            .filter(r -> !r.isDefault && r.is2xx && r.code != null)
+            .map(r -> r.code)
+            .findFirst();
+        if (twoXx.isPresent()) {
+            return twoXx;
+        }
+        return operation.responses.stream()
+            .filter(r -> !r.isDefault && r.code != null)
+            .map(r -> r.code)
+            .findFirst();
     }
 
     // ── sample-value generation ──────────────────────────────────────────────

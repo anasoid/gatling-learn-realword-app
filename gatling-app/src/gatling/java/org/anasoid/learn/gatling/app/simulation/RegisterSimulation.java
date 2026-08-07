@@ -42,19 +42,19 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
         scenario("registerAndCheckCurrentUser")
             .feed(users.iterator())
             .exec(
-                DefaultUserAndAuthenticationApi.createUserRequest(createUserRequestWithSessionValues())
+                DefaultUserAndAuthenticationApi.instance().createUserRequest(createUserRequestWithSessionValues())
                     .check(status().is(201))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
                     .check(jsonPath("$.user.email").isEL("#{email}")))
             .exitHereIfFailed()
             .exec(
-                DefaultUserAndAuthenticationApi.loginRequest(loginRequestWithSessionValues())
+                DefaultUserAndAuthenticationApi.instance().loginRequest(loginRequestWithSessionValues())
                     .check(status().is(200))
                     .check(jsonPath("$.user.token").saveAs("token")))
             .exitHereIfFailed()
             .exec(RegisterSimulation::appendLoggedInUserCsv)
             .exec(
-                DefaultUserAndAuthenticationApi.getCurrentUserRequest()
+                DefaultUserAndAuthenticationApi.instance().getCurrentUserRequest()
                     .header("Authorization", "Token #{token}")
                     .check(status().is(200))
                     .check(jsonPath("$.user.username").isEL("#{username}"))

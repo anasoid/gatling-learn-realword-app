@@ -119,7 +119,7 @@ public class {{classname}}SampleSimulation extends Simulation {
                 ;
             })
 {{/vendorExtensions.x-gatling-header-feeder}}
-            .exec(Default{{classname}}.{{operationId}}({{{vendorExtensions.x-all-params-sample}}}));
+            .exec(Default{{classname}}.instance().{{operationId}}({{{vendorExtensions.x-all-params-sample}}}));
 
         scenarioBuilders.add(
             scn{{operationId}}.injectOpen(
