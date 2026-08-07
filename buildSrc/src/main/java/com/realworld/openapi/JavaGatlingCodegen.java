@@ -336,6 +336,15 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                         buildSampleExpression(operation.bodyParam.dataType, allModels, 0));
                 }
 
+                if (operation.returnType != null) {
+                    // Public constant name for the Gatling session key under which
+                    // {operationId}AndParseResponse() stores the parsed response model, so
+                    // callers can reference it (e.g. ArticlesApi.CREATE_ARTICLE_RESPONSE_KEY)
+                    // instead of hardcoding the session key string.
+                    operation.vendorExtensions.put("x-response-key-constant",
+                        screamingSnakeCase(operation.operationId) + "_RESPONSE_KEY");
+                }
+
                 // Build combined sample-call argument list (body + query params)
                 String bodyArg = operation.bodyParam != null
                     ? (String) operation.vendorExtensions.get("x-body-sample-method") + "()"
@@ -421,5 +430,23 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
     private static String capitalize(String s) {
         if (s == null || s.isEmpty()) return s;
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    /**
+     * Converts a camelCase identifier (e.g. {@code createArticle}) into SCREAMING_SNAKE_CASE
+     * (e.g. {@code CREATE_ARTICLE}), suitable for use as a Java constant name.
+     */
+    private static String screamingSnakeCase(String camelCase) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < camelCase.length(); i++) {
+            char c = camelCase.charAt(i);
+            if (Character.isUpperCase(c)) {
+                if (i > 0) sb.append('_');
+                sb.append(c);
+            } else {
+                sb.append(Character.toUpperCase(c));
+            }
+        }
+        return sb.toString();
     }
 }
