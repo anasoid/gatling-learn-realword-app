@@ -8,8 +8,7 @@ package {{package}};
  * class (not {@code Generated{{classname}}}) from simulations and tests, via {@link #instance()}.
  *
  * <p>Holds the single shared instance used by callers, e.g.
- * {@code Default{{classname}}.instance().login(...)}. Swap in a custom subclass (e.g. to
- * override an {@code *ExpectedStatusCheck()} method) with {@link #setInstance}.
+ * {@code Default{{classname}}.instance().login(...)}.
  */
 public class Default{{classname}} extends Generated{{classname}} {
 
@@ -18,19 +17,10 @@ public class Default{{classname}} extends Generated{{classname}} {
     /**
      * Returns the shared instance callers should use to invoke {{classname}} operations.
      *
-     * @see #setInstance
      */
     public static Default{{classname}} instance() {
         return instance;
     }
 
-    /**
-     * Replaces the shared instance with a custom subclass, e.g.
-     * {@code Default{{classname}}.setInstance(new MyCustom{{classname}}())} where
-     * {@code MyCustom{{classname}}} extends {@link Default{{classname}}} and overrides one or
-     * more {@code *ExpectedStatusCheck()} methods.
-     */
-    public static void setInstance(Default{{classname}} newInstance) {
-        instance = newInstance;
-    }
+
 }
