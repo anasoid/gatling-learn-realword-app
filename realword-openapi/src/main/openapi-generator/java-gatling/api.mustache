@@ -3,6 +3,7 @@ package {{package}};
 import {{modelPackage}}.*;
 import io.gatling.javaapi.core.ChainBuilder;
 import io.gatling.javaapi.core.CheckBuilder;
+import io.gatling.javaapi.core.Session;
 import io.gatling.javaapi.http.HttpRequestActionBuilder;
 
 import java.util.List;
@@ -31,6 +32,12 @@ import static io.gatling.javaapi.http.HttpDsl.*;
  * }</pre>
  */
 public class Generated{{classname}} {
+
+    /**
+     * Gatling session key under which the raw response body of the most recently executed
+     * generated request is stored.
+     */
+    public static final String LAST_RESPONSE_BODY_KEY = "{{classname}}LastResponseBody";
 
     /**
      * All HTTP status codes considered successful ({@code 2xx}) for the purpose of the default
@@ -67,6 +74,7 @@ public class Generated{{classname}} {
 {{#hasBodyParam}}
                 .body(StringBody(body.toStringBody()))
 {{/hasBodyParam}}
+                .check(bodyString().saveAs(LAST_RESPONSE_BODY_KEY))
 {{#vendorExtensions.x-gatling-expected-status}}
                 .check(this.{{operationId}}ExpectedStatusCheck())
 {{/vendorExtensions.x-gatling-expected-status}}
@@ -102,6 +110,13 @@ public class Generated{{classname}} {
     }
 
 {{#returnType}}
+    /**
+     * Parse the raw response body stored under {@link #LAST_RESPONSE_BODY_KEY} into {{returnType}}.
+     */
+    public {{returnType}} getLastResponseFrom{{operationId}}(Session session) {
+        return {{returnType}}.fromJson(session.getString(LAST_RESPONSE_BODY_KEY));
+    }
+
     /**
      * Gatling session key under which {@link #{{operationId}}AndParseResponse} stores the
      * parsed {{returnType}} response.
