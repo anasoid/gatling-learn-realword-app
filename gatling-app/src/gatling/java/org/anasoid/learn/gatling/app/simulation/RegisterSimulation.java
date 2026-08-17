@@ -14,13 +14,12 @@ import io.gatling.javaapi.core.Session;
 import io.gatling.javaapi.http.HttpProtocolBuilder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.logging.Logger;
 
 public class RegisterSimulation extends AbstractRealWorldSimulation {
@@ -42,19 +41,22 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
         scenario("registerAndCheckCurrentUser")
             .feed(users.iterator())
             .exec(
-                DefaultUserAndAuthenticationApi.instance().createUserRequest(createUserRequestWithSessionValues())
+                DefaultUserAndAuthenticationApi.instance()
+                    .createUserRequest(createUserRequestWithSessionValues())
                     .check(status().is(201))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
                     .check(jsonPath("$.user.email").isEL("#{email}")))
             .exitHereIfFailed()
             .exec(
-                DefaultUserAndAuthenticationApi.instance().loginRequest(loginRequestWithSessionValues())
+                DefaultUserAndAuthenticationApi.instance()
+                    .loginRequest(loginRequestWithSessionValues())
                     .check(status().is(200))
                     .check(jsonPath("$.user.token").saveAs("token")))
             .exitHereIfFailed()
             .exec(RegisterSimulation::appendLoggedInUserCsv)
             .exec(
-                DefaultUserAndAuthenticationApi.instance().getCurrentUserRequest()
+                DefaultUserAndAuthenticationApi.instance()
+                    .getCurrentUserRequest()
                     .header("Authorization", "Token #{token}")
                     .check(status().is(200))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
@@ -75,13 +77,16 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
   }
 
   private static LoginUserEnvelope loginRequestWithSessionValues() {
-    return new LoginUserEnvelope().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"));
+    return new LoginUserEnvelope()
+        .setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"));
   }
 
   private static List<Map<String, Object>> buildUsers() {
     List<Map<String, Object>> users = new ArrayList<>(USERS_COUNT);
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMddhhmm");
+    String formattedDate = LocalDateTime.now().format(formatter);
     for (int i = 1; i <= USERS_COUNT; i++) {
-      String username = "user" + i;
+      String username = "user." + formattedDate + "." + i;
       Map<String, Object> user = new HashMap<>();
       user.put("username", username);
       user.put("email", username + "@example.com");
@@ -97,7 +102,8 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
       Files.deleteIfExists(LOGIN_USERS_CSV_FILE);
       LOGGER.info("Logged-in users CSV path: " + LOGIN_USERS_CSV_FILE.toAbsolutePath().normalize());
     } catch (IOException ex) {
-      throw new IllegalStateException("Failed to initialize login users CSV: " + LOGIN_USERS_CSV_FILE, ex);
+      throw new IllegalStateException(
+          "Failed to initialize login users CSV: " + LOGIN_USERS_CSV_FILE, ex);
     }
   }
 
@@ -107,12 +113,13 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
           session.getString("username"), session.getString("email"), session.getString("password"));
       return session;
     } catch (IOException ex) {
-      throw new IllegalStateException("Failed to append login users CSV: " + LOGIN_USERS_CSV_FILE, ex);
+      throw new IllegalStateException(
+          "Failed to append login users CSV: " + LOGIN_USERS_CSV_FILE, ex);
     }
   }
 
-  private static synchronized void appendLoginUsersRow(String username, String email, String password)
-      throws IOException {
+  private static synchronized void appendLoginUsersRow(
+      String username, String email, String password) throws IOException {
     if (Files.notExists(LOGIN_USERS_CSV_FILE)) {
       Files.writeString(
           LOGIN_USERS_CSV_FILE,
