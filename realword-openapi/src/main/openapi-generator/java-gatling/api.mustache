@@ -34,12 +34,6 @@ import static io.gatling.javaapi.http.HttpDsl.*;
 public class Generated{{classname}} {
 
     /**
-     * Gatling session key under which the raw response body of the most recently executed
-     * generated request is stored.
-     */
-    public static final String LAST_RESPONSE_BODY_KEY = "{{classname}}LastResponseBody";
-
-    /**
      * All HTTP status codes considered successful ({@code 2xx}) for the purpose of the default
      * {@code *ExpectedStatusCheck()} implementations below.
      */
@@ -48,6 +42,34 @@ public class Generated{{classname}} {
 
 {{#operations}}
 {{#operation}}
+    /**
+     * Gatling session key under which the raw response body of the most recent
+     * {{operationId}}AndSave or {{operationId}}AndParseResponse call is stored.
+     */
+    public static final String {{vendorExtensions.x-last-response-body-key-constant}} = "{{operationId}}LastResponseBody";
+
+    /**
+     * Gatling session key under which the raw response body of the most recent successful
+     * {{operationId}}AndSave or {{operationId}}AndParseResponse call is stored.
+     */
+    public static final String {{vendorExtensions.x-last-success-response-body-key-constant}} = "{{operationId}}LastSuccessResponseBody";
+
+    protected Session before{{operationId}}RequestAndSave(Session session) {
+        return session.remove({{vendorExtensions.x-last-response-body-key-constant}});
+    }
+
+    protected Session after{{operationId}}RequestAndSave(Session session) {
+        if (session.isFailed()) {
+            return session.remove({{vendorExtensions.x-last-response-body-key-constant}});
+        }
+        if (!session.contains({{vendorExtensions.x-last-response-body-key-constant}})) {
+            return session;
+        }
+        return session.set(
+            {{vendorExtensions.x-last-success-response-body-key-constant}},
+            session.getString({{vendorExtensions.x-last-response-body-key-constant}}));
+    }
+
     /**
      * {{summary}}{{#notes}}
      * <p>{{{notes}}}{{/notes}}
@@ -59,7 +81,7 @@ public class Generated{{classname}} {
      * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
      * @return a request builder that can be extended with checks/headers before execution
      */
-    public HttpRequestActionBuilder {{operationId}}Request({{{vendorExtensions.x-gatling-params-decl}}}) {
+   public HttpRequestActionBuilder {{operationId}}Request({{{vendorExtensions.x-gatling-params-decl}}}) {
         return http("{{operationId}}")
                 .{{vendorExtensions.x-gatling-java-http-method}}({{{vendorExtensions.x-gatling-request-path-expr}}})
 {{#queryParams}}
@@ -74,11 +96,26 @@ public class Generated{{classname}} {
 {{#hasBodyParam}}
                 .body(StringBody(body.toStringBody()))
 {{/hasBodyParam}}
-                .check(bodyString().saveAs(LAST_RESPONSE_BODY_KEY))
 {{#vendorExtensions.x-gatling-expected-status}}
                 .check(this.{{operationId}}ExpectedStatusCheck())
 {{/vendorExtensions.x-gatling-expected-status}}
         ;
+    }
+
+    /**
+     * Same as {@link #{{operationId}}Request}, and additionally saves the raw response body.
+     *
+     *{{#pathParams}}
+     * @param {{paramName}} {{baseName}} path parameter{{/pathParams}}
+     *{{#hasBodyParam}}
+     * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     * @return a request builder that saves the raw response body under {@link #{{vendorExtensions.x-last-response-body-key-constant}}}
+     */
+    public HttpRequestActionBuilder {{operationId}}RequestAndSave({{{vendorExtensions.x-gatling-params-decl}}}) {
+        return this.{{operationId}}Request({{{vendorExtensions.x-gatling-params-call}}})
+                .check(bodyString().saveAs({{vendorExtensions.x-last-response-body-key-constant}}));
     }
 
 {{#vendorExtensions.x-gatling-expected-status}}
@@ -109,12 +146,42 @@ public class Generated{{classname}} {
         return exec(this.{{operationId}}Request({{{vendorExtensions.x-gatling-params-call}}}));
     }
 
+    /**
+     * {{summary}}{{#notes}}
+     * <p>{{{notes}}}{{/notes}}
+     *{{#pathParams}}
+     * @param {{paramName}} {{baseName}} path parameter{{/pathParams}}
+     *{{#hasBodyParam}}
+     * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     * @return a {@link ChainBuilder} that saves the raw response body under {@link #{{vendorExtensions.x-last-response-body-key-constant}}}
+     */
+    public ChainBuilder {{operationId}}AndSave({{{vendorExtensions.x-gatling-params-decl}}}) {
+        return exec(this::before{{operationId}}RequestAndSave)
+            .exec(this.{{operationId}}RequestAndSave({{{vendorExtensions.x-gatling-params-call}}}))
+            .exec(this::after{{operationId}}RequestAndSave);
+    }
+
 {{#returnType}}
     /**
-     * Parse the raw response body stored under {@link #LAST_RESPONSE_BODY_KEY} into {{returnType}}.
+     * Parse the raw response body stored under {@link #{{vendorExtensions.x-last-response-body-key-constant}}} into {{returnType}}.
      */
-    public {{returnType}} getLastResponseFrom{{operationId}}(Session session) {
-        return {{returnType}}.fromJson(session.getString(LAST_RESPONSE_BODY_KEY));
+    protected {{returnType}} getLastResponseFrom{{operationId}}(Session session) {
+        if (!session.contains({{vendorExtensions.x-last-response-body-key-constant}})) {
+            return null;
+        }
+        return {{returnType}}.fromJson(session.getString({{vendorExtensions.x-last-response-body-key-constant}}));
+    }
+
+    /**
+     * Parse the raw response body stored under {@link #{{vendorExtensions.x-last-success-response-body-key-constant}}} into {{returnType}}.
+     */
+    protected {{returnType}} getLastSuccessResponseFrom{{operationId}}(Session session) {
+        if (!session.contains({{vendorExtensions.x-last-success-response-body-key-constant}})) {
+            return null;
+        }
+        return {{returnType}}.fromJson(session.getString({{vendorExtensions.x-last-success-response-body-key-constant}}));
     }
 
     /**
@@ -122,6 +189,18 @@ public class Generated{{classname}} {
      * parsed {{returnType}} response.
      */
     public static final String {{vendorExtensions.x-response-key-constant}} = "{{operationId}}Response";
+
+    protected Session before{{operationId}}AndParseResponse(Session session) {
+        return before{{operationId}}RequestAndSave(session).remove({{vendorExtensions.x-response-key-constant}});
+    }
+
+    protected Session after{{operationId}}AndParseResponse(Session session) {
+        Session updated = after{{operationId}}RequestAndSave(session);
+        if (updated.isFailed()) {
+            return updated.remove({{vendorExtensions.x-response-key-constant}});
+        }
+        return updated;
+    }
 
     /**
      * {{summary}}{{#notes}}
@@ -135,8 +214,10 @@ public class Generated{{classname}} {
      * @return a {@link ChainBuilder} that stores the parsed response model under {@link #{{vendorExtensions.x-response-key-constant}}}
      */
     public ChainBuilder {{operationId}}AndParseResponse({{{vendorExtensions.x-gatling-params-decl}}}) {
-        return exec(this.{{operationId}}Request({{{vendorExtensions.x-gatling-params-call}}})
-            .check(bodyString().transform({{returnType}}::fromJson).saveAs({{vendorExtensions.x-response-key-constant}})));
+        return exec(this::before{{operationId}}AndParseResponse)
+            .exec(this.{{operationId}}RequestAndSave({{{vendorExtensions.x-gatling-params-call}}})
+                .check(bodyString().transform({{returnType}}::fromJson).saveAs({{vendorExtensions.x-response-key-constant}})))
+            .exec(this::after{{operationId}}AndParseResponse);
     }
 
 {{/returnType}}

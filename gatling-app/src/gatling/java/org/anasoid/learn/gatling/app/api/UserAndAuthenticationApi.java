@@ -4,6 +4,7 @@ import com.realworld.gatling.generated.api.GeneratedUserAndAuthenticationApi;
 import com.realworld.gatling.generated.model.LoginUserEnvelope;
 import com.realworld.gatling.generated.model.UserEnvelope;
 import io.gatling.javaapi.core.ChainBuilder;
+import io.gatling.javaapi.core.Session;
 
 /*
  * Copyright 2023-2026 the original author or authors.
@@ -35,9 +36,14 @@ import io.gatling.javaapi.core.ChainBuilder;
     return loginAndParseResponse(body)
         .exec(
             session -> {
+              if (session.isFailed()) {
+                return session.remove(AUTH_TOKEN);
+              }
               UserEnvelope userEnvelope = getLastResponseFromlogin(session);
-              session.set(AUTH_TOKEN, userEnvelope.getUser().getToken());
-              return session;
+              if (userEnvelope == null || userEnvelope.getUser() == null) {
+                throw new IllegalStateException("Expected login response after a successful login request");
+              }
+              return session.set(AUTH_TOKEN, userEnvelope.getUser().getToken());
             });
   }
 }

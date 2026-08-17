@@ -373,6 +373,10 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                         buildSampleExpression(operation.bodyParam.dataType, allModels, 0));
                 }
 
+                operation.vendorExtensions.put("x-last-response-body-key-constant",
+                    screamingSnakeCase(operation.operationId) + "_LAST_RESPONSE_BODY_KEY");
+                operation.vendorExtensions.put("x-last-success-response-body-key-constant",
+                    screamingSnakeCase(operation.operationId) + "_LAST_SUCCESS_RESPONSE_BODY_KEY");
                 if (operation.returnType != null) {
                     // Public constant name for the Gatling session key under which
                     // {operationId}AndParseResponse() stores the parsed response model, so
