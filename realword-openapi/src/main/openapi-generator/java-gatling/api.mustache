@@ -40,6 +40,16 @@ public class Generated{{classname}} {
     private static final List<Integer> HTTP_SUCCESS_STATUSES =
             IntStream.rangeClosed(200, 206).boxed().collect(Collectors.toList());
 
+    /**
+     * Global hook invoked for every request builder.
+     * <p>
+     * Default implementation is a no-op and returns the input builder unchanged.
+     * Override in subclasses to inject request-wide customizations.
+     */
+    protected HttpRequestActionBuilder hookBuilder(HttpRequestActionBuilder builder) {
+        return builder;
+    }
+
 {{#operations}}
 {{#operation}}
     /**
@@ -80,6 +90,16 @@ public class Generated{{classname}} {
     }
 
     /**
+     * Operation-specific hook for {{operationId}} request builders.
+     * <p>
+     * Default implementation is a no-op and returns the input builder unchanged.
+     * Override in subclasses to customize only this operation.
+     */
+    protected HttpRequestActionBuilder hookBuilder{{vendorExtensions.x-operation-id-capitalized}}(HttpRequestActionBuilder builder) {
+        return builder;
+    }
+
+    /**
      * {{summary}}{{#notes}}
      * <p>{{{notes}}}{{/notes}}
      *{{#pathParams}}
@@ -91,7 +111,7 @@ public class Generated{{classname}} {
      * @return a request builder that can be extended with checks/headers before execution
      */
    public HttpRequestActionBuilder {{operationId}}Request({{{vendorExtensions.x-gatling-params-decl}}}) {
-        return http("{{operationId}}")
+        return this.hookBuilder{{vendorExtensions.x-operation-id-capitalized}}(this.hookBuilder(http("{{operationId}}")
                 .{{vendorExtensions.x-gatling-java-http-method}}({{{vendorExtensions.x-gatling-request-path-expr}}})
 {{#queryParams}}
                 .queryParam("{{baseName}}", {{paramName}})
@@ -108,7 +128,7 @@ public class Generated{{classname}} {
 {{#vendorExtensions.x-gatling-expected-status}}
                 .check(this.{{operationId}}ExpectedStatusCheck())
 {{/vendorExtensions.x-gatling-expected-status}}
-        ;
+        ));
     }
 
     /**
