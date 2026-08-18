@@ -73,11 +73,11 @@ public class Generated{{classname}} {
             .remove({{vendorExtensions.x-last-success-response-body-key-constant}});
     }
 
-    protected Session before{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(Session session) {
+    private Session before{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(Session session) {
         return remove{{vendorExtensions.x-operation-id-capitalized}}SavedResponses(session);
     }
 
-    protected Session after{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(Session session) {
+    private Session after{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(Session session) {
         if (session.isFailed()) {
             return remove{{vendorExtensions.x-operation-id-capitalized}}SavedResponses(session);
         }
@@ -219,11 +219,11 @@ public class Generated{{classname}} {
      */
     public static final String {{vendorExtensions.x-response-key-constant}} = "{{operationId}}Response";
 
-    protected Session before{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse(Session session) {
+    private Session before{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse(Session session) {
         return before{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(session).remove({{vendorExtensions.x-response-key-constant}});
     }
 
-    protected Session after{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse(Session session) {
+    private Session after{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse(Session session) {
         Session updated = after{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(session);
         if (updated.isFailed()) {
             return updated.remove({{vendorExtensions.x-response-key-constant}});
