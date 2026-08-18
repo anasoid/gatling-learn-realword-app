@@ -25,6 +25,10 @@ tasks.named('processGatlingResources').configure {
   dependsOn ':realword-openapi:generateRealworldGatling'
 }
 
+tasks.named('build').configure {
+  dependsOn tasks.named('compileGatlingJava')
+}
+
 gatling {
   enterprise {
     // Enterprise Cloud (https://cloud.gatling.io/) configuration reference: https://docs.gatling.io/reference/integrations/build-tools/gradle-plugin/
