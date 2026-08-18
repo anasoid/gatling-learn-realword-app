@@ -366,6 +366,8 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
                 findExpectedStatusCode(operation)
                     .ifPresent(code -> operation.vendorExtensions.put("x-gatling-expected-status", code));
 
+                operation.vendorExtensions.put("x-operation-id-capitalized", capitalize(operation.operationId));
+
                 if (operation.bodyParam != null && operation.bodyParam.dataType != null) {
                     String methodName = "sample" + capitalize(operation.operationId) + "Body";
                     operation.vendorExtensions.put("x-body-sample-method", methodName);

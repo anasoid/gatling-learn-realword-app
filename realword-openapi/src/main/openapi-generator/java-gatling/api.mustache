@@ -57,19 +57,19 @@ public class Generated{{classname}} {
     /**
      * Remove the saved raw response bodies for {{operationId}} from the Gatling session.
      */
-    protected Session remove{{operationId}}SavedResponses(Session session) {
+    protected Session remove{{vendorExtensions.x-operation-id-capitalized}}SavedResponses(Session session) {
         return session
             .remove({{vendorExtensions.x-last-response-body-key-constant}})
             .remove({{vendorExtensions.x-last-success-response-body-key-constant}});
     }
 
-    protected Session before{{operationId}}RequestAndSave(Session session) {
-        return remove{{operationId}}SavedResponses(session);
+    protected Session before{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(Session session) {
+        return remove{{vendorExtensions.x-operation-id-capitalized}}SavedResponses(session);
     }
 
-    protected Session after{{operationId}}RequestAndSave(Session session) {
+    protected Session after{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(Session session) {
         if (session.isFailed()) {
-            return remove{{operationId}}SavedResponses(session);
+            return remove{{vendorExtensions.x-operation-id-capitalized}}SavedResponses(session);
         }
         if (!session.contains({{vendorExtensions.x-last-response-body-key-constant}})) {
             return session;
@@ -167,16 +167,16 @@ public class Generated{{classname}} {
      * @return a {@link ChainBuilder} that saves the raw response body under {@link #{{vendorExtensions.x-last-response-body-key-constant}}}
      */
     public ChainBuilder {{operationId}}AndSave({{{vendorExtensions.x-gatling-params-decl}}}) {
-        return exec(this::before{{operationId}}RequestAndSave)
+        return exec(this::before{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave)
             .exec(this.{{operationId}}RequestAndSave({{{vendorExtensions.x-gatling-params-call}}}))
-            .exec(this::after{{operationId}}RequestAndSave);
+            .exec(this::after{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave);
     }
 
 {{#returnType}}
     /**
      * Parse the raw response body stored under {@link #{{vendorExtensions.x-last-response-body-key-constant}}} into {{returnType}}.
      */
-    protected {{returnType}} getLastResponseFrom{{operationId}}(Session session) {
+    protected {{returnType}} getLastResponseFrom{{vendorExtensions.x-operation-id-capitalized}}(Session session) {
         if (!session.contains({{vendorExtensions.x-last-response-body-key-constant}})) {
             return null;
         }
@@ -186,7 +186,7 @@ public class Generated{{classname}} {
     /**
      * Parse the raw response body stored under {@link #{{vendorExtensions.x-last-success-response-body-key-constant}}} into {{returnType}}.
      */
-    protected {{returnType}} getLastSuccessResponseFrom{{operationId}}(Session session) {
+    protected {{returnType}} getLastSuccessResponseFrom{{vendorExtensions.x-operation-id-capitalized}}(Session session) {
         if (!session.contains({{vendorExtensions.x-last-success-response-body-key-constant}})) {
             return null;
         }
@@ -199,12 +199,12 @@ public class Generated{{classname}} {
      */
     public static final String {{vendorExtensions.x-response-key-constant}} = "{{operationId}}Response";
 
-    protected Session before{{operationId}}AndParseResponse(Session session) {
-        return before{{operationId}}RequestAndSave(session).remove({{vendorExtensions.x-response-key-constant}});
+    protected Session before{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse(Session session) {
+        return before{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(session).remove({{vendorExtensions.x-response-key-constant}});
     }
 
-    protected Session after{{operationId}}AndParseResponse(Session session) {
-        Session updated = after{{operationId}}RequestAndSave(session);
+    protected Session after{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse(Session session) {
+        Session updated = after{{vendorExtensions.x-operation-id-capitalized}}RequestAndSave(session);
         if (updated.isFailed()) {
             return updated.remove({{vendorExtensions.x-response-key-constant}});
         }
@@ -223,10 +223,10 @@ public class Generated{{classname}} {
      * @return a {@link ChainBuilder} that stores the parsed response model under {@link #{{vendorExtensions.x-response-key-constant}}}
      */
     public ChainBuilder {{operationId}}AndParseResponse({{{vendorExtensions.x-gatling-params-decl}}}) {
-        return exec(this::before{{operationId}}AndParseResponse)
+        return exec(this::before{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse)
             .exec(this.{{operationId}}RequestAndSave({{{vendorExtensions.x-gatling-params-call}}})
                 .check(bodyString().transform({{returnType}}::fromJson).saveAs({{vendorExtensions.x-response-key-constant}})))
-            .exec(this::after{{operationId}}AndParseResponse);
+            .exec(this::after{{vendorExtensions.x-operation-id-capitalized}}AndParseResponse);
     }
 
 {{/returnType}}
