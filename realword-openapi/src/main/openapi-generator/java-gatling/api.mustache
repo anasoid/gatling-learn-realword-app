@@ -50,6 +50,16 @@ public class Generated{{classname}} {
         return builder;
     }
 
+    /**
+     * Authentication hook invoked only for operations that require authentication.
+     * <p>
+     * Default implementation is a no-op and returns the input builder unchanged.
+     * Override in subclasses to add authentication on secured endpoints.
+     */
+    protected HttpRequestActionBuilder builderAuthentication(HttpRequestActionBuilder builder) {
+        return builder;
+    }
+
 {{#operations}}
 {{#operation}}
     /**
@@ -111,7 +121,7 @@ public class Generated{{classname}} {
      * @return a request builder that can be extended with checks/headers before execution
      */
    public HttpRequestActionBuilder {{operationId}}Request({{{vendorExtensions.x-gatling-params-decl}}}) {
-        return this.hookBuilder{{vendorExtensions.x-operation-id-capitalized}}(this.hookBuilder(http("{{operationId}}")
+       HttpRequestActionBuilder requestBuilder = this.hookBuilder(http("{{operationId}}")
                 .{{vendorExtensions.x-gatling-java-http-method}}({{{vendorExtensions.x-gatling-request-path-expr}}})
 {{#queryParams}}
                 .queryParam("{{baseName}}", {{paramName}})
@@ -128,7 +138,14 @@ public class Generated{{classname}} {
 {{#vendorExtensions.x-gatling-expected-status}}
                 .check(this.{{operationId}}ExpectedStatusCheck())
 {{/vendorExtensions.x-gatling-expected-status}}
-        ));
+        );
+{{#authMethods}}
+        HttpRequestActionBuilder authenticatedRequestBuilder = this.builderAuthentication(requestBuilder);
+        return this.hookBuilder{{vendorExtensions.x-operation-id-capitalized}}(authenticatedRequestBuilder);
+{{/authMethods}}
+{{^authMethods}}
+        return this.hookBuilder{{vendorExtensions.x-operation-id-capitalized}}(requestBuilder);
+{{/authMethods}}
     }
 
     /**

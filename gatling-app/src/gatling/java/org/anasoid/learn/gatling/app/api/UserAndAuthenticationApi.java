@@ -4,6 +4,8 @@ import com.realworld.gatling.generated.api.GeneratedUserAndAuthenticationApi;
 import com.realworld.gatling.generated.model.LoginUserEnvelope;
 import com.realworld.gatling.generated.model.UserEnvelope;
 import io.gatling.javaapi.core.ChainBuilder;
+import io.gatling.javaapi.http.HttpRequestActionBuilder;
+import org.anasoid.learn.gatling.app.util.AuthenticationUtil;
 
 /*
  * Copyright 2023-2026 the original author or authors.
@@ -21,9 +23,9 @@ import io.gatling.javaapi.core.ChainBuilder;
  * limitations under the License.
  * @author : anasoid
  * Date :   8/14/26
- */ public class UserAndAuthenticationApi extends GeneratedUserAndAuthenticationApi {
+ */
+public class UserAndAuthenticationApi extends GeneratedUserAndAuthenticationApi {
 
-  public static final String AUTH_TOKEN = "authToken";
   private static final UserAndAuthenticationApi instance = new UserAndAuthenticationApi();
 
   public static UserAndAuthenticationApi instance() {
@@ -36,16 +38,20 @@ import io.gatling.javaapi.core.ChainBuilder;
         .exec(
             session -> {
               if (session.isFailed()) {
-                return session.remove(AUTH_TOKEN);
+                return session.remove(AuthenticationUtil.AUTH_TOKEN);
               }
               UserEnvelope userEnvelope = getLastResponseFromLogin(session);
               if (userEnvelope == null || userEnvelope.getUser() == null) {
-                throw new IllegalStateException("Expected login response after a successful login request");
+                throw new IllegalStateException(
+                    "Expected login response after a successful login request");
               }
               removeLoginSavedResponses(session);
-              return session.set(AUTH_TOKEN, userEnvelope.getUser().getToken());
+              return session.set(AuthenticationUtil.AUTH_TOKEN, userEnvelope.getUser().getToken());
             });
   }
-  
 
+  @Override
+  protected HttpRequestActionBuilder builderAuthentication(HttpRequestActionBuilder builder) {
+    return AuthenticationUtil.builderAuthentification(builder);
+  }
 }

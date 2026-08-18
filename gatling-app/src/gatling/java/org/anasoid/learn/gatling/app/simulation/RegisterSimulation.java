@@ -47,18 +47,12 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
                     .check(jsonPath("$.user.username").isEL("#{username}"))
                     .check(jsonPath("$.user.email").isEL("#{email}")))
             .exitHereIfFailed()
-            .exec(
-                UserAndAuthenticationApi.instance()
-                    .loginRequest(loginRequestWithSessionValues())
-                    .check(status().is(200))
-                    .check(jsonPath("$.user.token").saveAs("token")))
+            .exec(UserAndAuthenticationApi.instance().login(loginRequestWithSessionValues()))
             .exitHereIfFailed()
             .exec(RegisterSimulation::appendLoggedInUserCsv)
             .exec(
                 UserAndAuthenticationApi.instance()
                     .getCurrentUserRequest()
-                    .header("Authorization", "Token #{token}")
-                    .check(status().is(200))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
                     .check(jsonPath("$.user.email").isEL("#{email}")));
 
@@ -83,7 +77,7 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
 
   private static List<Map<String, Object>> buildUsers() {
     List<Map<String, Object>> users = new ArrayList<>(USERS_COUNT);
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMddhhmm");
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyMMddHHmm");
     String formattedDate = LocalDateTime.now().format(formatter);
     for (int i = 1; i <= USERS_COUNT; i++) {
       String username = "user." + formattedDate + "." + i;
