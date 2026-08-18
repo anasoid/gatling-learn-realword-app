@@ -44,8 +44,8 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
                 UserAndAuthenticationApi.instance()
                     .createUserRequest(createUserRequestWithSessionValues())
                     .check(status().is(201))
-                    .check(jsonPath("$.user.username").isEL("#{username}"))
-                    .check(jsonPath("$.user.email").isEL("#{email}")))
+                    .check(jsonPath("$.user.username").isEL("#{users-username}"))
+                    .check(jsonPath("$.user.email").isEL("#{users-email}")))
             .exitHereIfFailed()
             .exec(UserAndAuthenticationApi.instance().login(loginRequestWithSessionValues()))
             .exitHereIfFailed()
@@ -53,8 +53,8 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
             .exec(
                 UserAndAuthenticationApi.instance()
                     .getCurrentUserRequest()
-                    .check(jsonPath("$.user.username").isEL("#{username}"))
-                    .check(jsonPath("$.user.email").isEL("#{email}")));
+                    .check(jsonPath("$.user.username").isEL("#{users-username}"))
+                    .check(jsonPath("$.user.email").isEL("#{users-email}")));
 
     scenarioBuilders.add(registerAndCheckCurrentUser.injectOpen(atOnceUsers(USERS_COUNT)));
 
@@ -65,14 +65,14 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
     return new NewUserEnvelope()
         .setUser(
             new NewUser()
-                .setUsername("#{username}")
-                .setEmail("#{email}")
-                .setPassword("#{password}"));
+                .setUsername("#{users-username}")
+                .setEmail("#{users-email}")
+                .setPassword("#{users-password}"));
   }
 
   private static LoginUserEnvelope loginRequestWithSessionValues() {
     return new LoginUserEnvelope()
-        .setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"));
+        .setUser(new LoginUser().setEmail("#{users-email}").setPassword("#{users-password}"));
   }
 
   private static List<Map<String, Object>> buildUsers() {
@@ -82,9 +82,9 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
     for (int i = 1; i <= USERS_COUNT; i++) {
       String username = "user." + formattedDate + "." + i;
       Map<String, Object> user = new HashMap<>();
-      user.put("username", username);
-      user.put("email", username + "@example.com");
-      user.put("password", PASSWORD);
+      user.put("users-username", username);
+      user.put("users-email", username + "@example.com");
+      user.put("users-password", PASSWORD);
       users.add(user);
     }
     return users;
