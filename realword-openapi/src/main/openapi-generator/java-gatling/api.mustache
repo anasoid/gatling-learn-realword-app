@@ -54,13 +54,22 @@ public class Generated{{classname}} {
      */
     public static final String {{vendorExtensions.x-last-success-response-body-key-constant}} = "{{operationId}}LastSuccessResponseBody";
 
+    /**
+     * Remove the saved raw response bodies for {{operationId}} from the Gatling session.
+     */
+    protected Session remove{{operationId}}SavedResponses(Session session) {
+        return session
+            .remove({{vendorExtensions.x-last-response-body-key-constant}})
+            .remove({{vendorExtensions.x-last-success-response-body-key-constant}});
+    }
+
     protected Session before{{operationId}}RequestAndSave(Session session) {
-        return session.remove({{vendorExtensions.x-last-response-body-key-constant}});
+        return remove{{operationId}}SavedResponses(session);
     }
 
     protected Session after{{operationId}}RequestAndSave(Session session) {
         if (session.isFailed()) {
-            return session.remove({{vendorExtensions.x-last-response-body-key-constant}});
+            return remove{{operationId}}SavedResponses(session);
         }
         if (!session.contains({{vendorExtensions.x-last-response-body-key-constant}})) {
             return session;
