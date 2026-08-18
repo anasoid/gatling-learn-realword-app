@@ -3,7 +3,6 @@ package org.anasoid.learn.gatling.app.simulation;
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
-import com.realworld.gatling.generated.api.DefaultUserAndAuthenticationApi;
 import com.realworld.gatling.generated.model.LoginUser;
 import com.realworld.gatling.generated.model.LoginUserEnvelope;
 import com.realworld.gatling.generated.model.NewUser;
@@ -21,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.logging.Logger;
+import org.anasoid.learn.gatling.app.api.UserAndAuthenticationApi;
 
 public class RegisterSimulation extends AbstractRealWorldSimulation {
   private static final Logger LOGGER = Logger.getLogger(RegisterSimulation.class.getName());
@@ -41,21 +41,21 @@ public class RegisterSimulation extends AbstractRealWorldSimulation {
         scenario("registerAndCheckCurrentUser")
             .feed(users.iterator())
             .exec(
-                DefaultUserAndAuthenticationApi.instance()
+                UserAndAuthenticationApi.instance()
                     .createUserRequest(createUserRequestWithSessionValues())
                     .check(status().is(201))
                     .check(jsonPath("$.user.username").isEL("#{username}"))
                     .check(jsonPath("$.user.email").isEL("#{email}")))
             .exitHereIfFailed()
             .exec(
-                DefaultUserAndAuthenticationApi.instance()
+                UserAndAuthenticationApi.instance()
                     .loginRequest(loginRequestWithSessionValues())
                     .check(status().is(200))
                     .check(jsonPath("$.user.token").saveAs("token")))
             .exitHereIfFailed()
             .exec(RegisterSimulation::appendLoggedInUserCsv)
             .exec(
-                DefaultUserAndAuthenticationApi.instance()
+                UserAndAuthenticationApi.instance()
                     .getCurrentUserRequest()
                     .header("Authorization", "Token #{token}")
                     .check(status().is(200))

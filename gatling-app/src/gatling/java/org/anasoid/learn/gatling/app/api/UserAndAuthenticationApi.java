@@ -42,7 +42,10 @@ import io.gatling.javaapi.core.ChainBuilder;
               if (userEnvelope == null || userEnvelope.getUser() == null) {
                 throw new IllegalStateException("Expected login response after a successful login request");
               }
+              removeLoginSavedResponses(session);
               return session.set(AUTH_TOKEN, userEnvelope.getUser().getToken());
             });
   }
+  
+
 }
