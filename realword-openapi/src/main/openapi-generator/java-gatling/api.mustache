@@ -17,7 +17,8 @@ import static io.gatling.javaapi.http.HttpDsl.*;
  * Fully generated Gatling API actions for {{classname}} operations.
  *
  * <p>This class is regenerated from the OpenAPI contract on every build — do not edit it
- * directly or add custom logic here, as changes will be overwritten. Use
+ * directly or add custom logic here, as changes will be overwritten. It implements
+ * {@link {{classname}}}, which exposes the non-response-saving API surface. Use
  * {@link Default{{classname}}} instead, which extends this class and is the stable entry point
  * simulations/tests should reference.
  *
@@ -31,7 +32,7 @@ import static io.gatling.javaapi.http.HttpDsl.*;
  *     .exec(Default{{classname}}.instance().login(new LoginRequest().setUser(new LoginUser().setEmail("#{email}").setPassword("#{password}"))));
  * }</pre>
  */
-public class Generated{{classname}} {
+public class Generated{{classname}} implements {{classname}} {
 
     /**
      * All HTTP status codes considered successful ({@code 2xx}) for the purpose of the default

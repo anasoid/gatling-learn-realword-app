@@ -1,0 +1,32 @@
+package {{package}};
+
+import {{modelPackage}}.*;
+import io.gatling.javaapi.core.ChainBuilder;
+
+/**
+ * Public API contract for {{classname}} operations.
+ *
+ * <p>Exposes only the non-response-saving executable chain methods. Request-builder,
+ * response-saving, and response-parsing helpers remain implementation details on
+ * {@link Generated{{classname}}}.
+ */
+public interface {{classname}} {
+
+{{#operations}}
+{{#operation}}
+    /**
+     * {{summary}}{{#notes}}
+     * <p>{{{notes}}}{{/notes}}
+     *{{#pathParams}}
+     * @param {{paramName}} {{baseName}} path parameter{{/pathParams}}
+     *{{#hasBodyParam}}
+     * @param body request body model — call setters to populate fields before passing.{{/hasBodyParam}}
+     *{{#queryParams}}
+     * @param {{paramName}} {{baseName}} query parameter{{/queryParams}}
+     * @return a {@link ChainBuilder} wrapping the HTTP request
+     */
+    ChainBuilder {{operationId}}({{{vendorExtensions.x-gatling-params-decl}}});
+
+{{/operation}}
+{{/operations}}
+}

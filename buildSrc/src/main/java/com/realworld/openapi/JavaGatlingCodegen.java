@@ -45,6 +45,7 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
         apiTemplateFiles.clear();
         apiTemplateFiles.put("api.mustache", ".java");
         apiTemplateFiles.put("api-default.mustache", ".java");
+        apiTemplateFiles.put("api-interface.mustache", ".java");
         apiTemplateFiles.put("simulation.mustache", "SampleSimulation.java");
 
         modelTemplateFiles.clear();
@@ -62,12 +63,14 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
     }
 
     /**
-     * Splits each API tag into two generated classes: the fully generated
-     * {@code Generated{Api}} (produced by {@code api.mustache}, holds all the actual request
-     * methods) and a thin {@code Default{Api}} (produced by {@code api-default.mustache}) that
-     * extends it. {@code Default{Api}} is the class simulations/tests should reference; the
-     * {@code Generated} prefix on the base class signals it is fully regenerated on every build
-     * and should never be hand-edited.
+     * Splits each API tag into three generated types: the public {@code {Api}} interface
+     * (produced by {@code api-interface.mustache}, exposes only the non-response-saving request
+     * methods), the fully generated {@code Generated{Api}} class (produced by {@code api.mustache},
+     * holds the complete generated implementation and implements the interface), and a thin
+     * {@code Default{Api}} (produced by {@code api-default.mustache}) that extends it.
+     * {@code Default{Api}} is the class simulations/tests should reference; the {@code Generated}
+     * prefix on the base class signals it is fully regenerated on every build and should never be
+     * hand-edited.
      * <p>
      * {@link #apiFilename} normally derives both the output filename and the {@code classname}
      * from {@link #toApiName}, shared across every template registered for a tag. Overriding it
@@ -81,6 +84,9 @@ public class JavaGatlingCodegen extends ScalaGatlingCodegen {
         }
         if ("api-default.mustache".equals(templateName)) {
             return apiFileFolder() + File.separator + "Default" + toApiFilename(tag) + apiTemplateFiles().get(templateName);
+        }
+        if ("api-interface.mustache".equals(templateName)) {
+            return apiFileFolder() + File.separator + toApiFilename(tag) + apiTemplateFiles().get(templateName);
         }
         return super.apiFilename(templateName, tag);
     }
