@@ -1,8 +1,6 @@
-package org.anasoid.learn.gatling.core.simulation;
-
+package org.anasoid.learn.gatling.app.config;
 
 import com.typesafe.config.ConfigFactory;
-import io.gatling.javaapi.core.Simulation;
 import lombok.Getter;
 
 /*
@@ -20,10 +18,28 @@ import lombok.Getter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * @author : anasoid
- * Date :   8/2/26
+ * Date :   8/19/26
  */
-public abstract class AbstractSimulation extends Simulation {
 
+public class Config {
 
+  private static final Config INSTANCE = new Config();
+
+  @Getter private final String baseUrl;
+  @Getter private final com.typesafe.config.Config config;
+
+  private Config() {
+    String testConfig = System.getProperty("testConfig", "baseline");
+    config =
+        ConfigFactory.load(testConfig)
+            .withFallback(ConfigFactory.load("gatling"))
+            .withFallback(ConfigFactory.load())
+            .resolve();
+    baseUrl = config.getString("performance.baseUrl");
+  }
+
+  public static Config getInstance() {
+    return INSTANCE;
+  }
 
 }

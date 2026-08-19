@@ -6,6 +6,8 @@ plugins {
 def generatedGatlingDir = project(':realword-openapi').layout.buildDirectory.dir('generated/java-gatling')
 
 dependencies {
+  gatlingCompileOnly 'org.projectlombok:lombok:1.18.46'
+  gatlingAnnotationProcessor 'org.projectlombok:lombok:1.18.46'
   gatlingImplementation project(':gatling-core')
   gatlingImplementation project(':realword-openapi')
 }

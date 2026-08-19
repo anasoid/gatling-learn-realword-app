@@ -2,7 +2,10 @@ package org.anasoid.learn.gatling.app.simulation;
 
 import static io.gatling.javaapi.http.HttpDsl.http;
 
+import com.typesafe.config.ConfigFactory;
 import io.gatling.javaapi.http.HttpProtocolBuilder;
+import lombok.Getter;
+import org.anasoid.learn.gatling.app.config.Config;
 import org.anasoid.learn.gatling.core.simulation.AbstractSimulation;
 
 /*
@@ -24,8 +27,11 @@ import org.anasoid.learn.gatling.core.simulation.AbstractSimulation;
  */
 public abstract class AbstractRealWorldSimulation extends AbstractSimulation {
 
+  @Getter
+  private final String baseUrl;
+
   public AbstractRealWorldSimulation() {
-    super();
+    baseUrl = Config.getInstance().getBaseUrl();
   }
 
   HttpProtocolBuilder getHttpProtocolBuilder() {
