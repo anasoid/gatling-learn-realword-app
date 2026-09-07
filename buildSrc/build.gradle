@@ -7,5 +7,5 @@ repositories {
 }
 
 dependencies {
-  implementation 'org.openapitools:openapi-generator:7.24.0'
+  implementation 'org.openapitools:openapi-generator:7.25.0'
 }
